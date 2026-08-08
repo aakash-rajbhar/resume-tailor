@@ -1,10 +1,20 @@
 import mammoth from "mammoth";
 
 // Polyfill DOMMatrix for pdfjs-dist (required in Node.js/Vercel serverless)
-if (typeof globalThis.DOMMatrix === "undefined") {
+if (typeof globalThis.DOMMatrix !== "function") {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const DOMMatrix = require("dommatrix");
-  globalThis.DOMMatrix = DOMMatrix as any;
+  const domMatrixModule = require("dommatrix");
+  
+  // Handle CommonJS, ES Module interop (.default), and direct module exports
+  const DOMMatrixConstructor = typeof domMatrixModule === "function"
+    ? domMatrixModule
+    : (domMatrixModule.default || domMatrixModule.DOMMatrix || domMatrixModule);
+
+  if (typeof DOMMatrixConstructor === "function") {
+    globalThis.DOMMatrix = DOMMatrixConstructor as any;
+  } else {
+    console.error("DOMMatrix polyfill failed: resolved module is not a constructor function", domMatrixModule);
+  }
 }
 
 /** Extracts plain text from an uploaded resume file (.docx, .pdf, or .txt). */
