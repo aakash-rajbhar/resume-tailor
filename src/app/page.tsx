@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
+import { Toaster, toast } from "sonner";
 import HeaderBar from "@/components/HeaderBar";
 import InputPanel, { type InputPayload } from "@/components/InputPanel";
 import Workspace from "@/components/Workspace";
@@ -40,7 +41,6 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TailoredResume | null>(null);
 
   useEffect(() => {
@@ -55,8 +55,53 @@ export default function Home() {
 
   const hasKey = settings.provider === "gemini" ? !!settings.geminiKey : !!settings.groqKey;
 
+  // Parse and format quota/rate-limit errors for user-friendly display
+  function formatErrorMessage(error: string): { title: string; description: string; action?: { label: string; onClick: () => void } } {
+    // Check for Gemini quota exceeded error
+    if (error.includes("quota") || error.includes("QUOTA_EXCEEDED") || error.includes("rate limit") || error.includes("RATE_LIMIT_EXCEEDED")) {
+      const isGemini = error.includes("generativelanguage.googleapis.com") || error.includes("gemini") || error.includes("Gemini");
+
+      if (isGemini) {
+        return {
+          title: "Gemini API quota exceeded",
+          description: "You've hit the free tier limit for Gemini. Please wait a moment before trying again, or add a Groq API key in settings for higher limits.",
+        };
+      }
+      // Generic quota error
+      return {
+        title: "API rate limit reached",
+        description: "Too many requests. Please wait a bit before trying again.",
+      };
+    }
+
+    // Check for missing/invalid API key
+    if (error.includes("API key") || error.includes("API_KEY") || error.includes("authentication") || error.includes("unauthorized") || error.includes("401") || error.includes("403")) {
+      return {
+        title: "Invalid or missing API key",
+        description: "Your API key appears to be invalid or missing. Please check your key in settings.",
+        action: {
+          label: "Open settings",
+          onClick: () => setSettingsOpen(true),
+        },
+      };
+    }
+
+    // Check for network errors
+    if (error.includes("network") || error.includes("fetch") || error.includes("Failed to fetch") || error.includes("ECONNREFUSED")) {
+      return {
+        title: "Network error",
+        description: "Unable to connect to the AI service. Check your internet connection.",
+      };
+    }
+
+    // Default fallback
+    return {
+      title: "Failed to analyze resume",
+      description: error.length > 200 ? error.slice(0, 200) + "…" : error,
+    };
+  }
+
   async function handleSubmit(payload: InputPayload) {
-    setError(null);
     setLoading(true);
     setResult(null);
     try {
@@ -75,8 +120,22 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
       setResult(data as TailoredResume);
+      toast.success("Resume tailored successfully", {
+        description: `Match score: ${data.atsScoreBefore}% → ${data.atsScoreAfter}% (${data.atsScoreAfter - data.atsScoreBefore >= 0 ? "+" : ""}${data.atsScoreAfter - data.atsScoreBefore} pts)`,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      const message = err instanceof Error ? err.message : "Something went wrong.";
+      const formatted = formatErrorMessage(message);
+      toast.error(formatted.title, {
+        description: formatted.description,
+        action: formatted.action
+          ? {
+              label: formatted.action.label,
+              onClick: formatted.action.onClick,
+            }
+          : undefined,
+        duration: formatted.action ? 10000 : 6000,
+      });
     } finally {
       setLoading(false);
     }
@@ -85,7 +144,6 @@ export default function Home() {
   async function handleDownload() {
     if (!result) return;
     setDownloading(true);
-    setError(null);
     try {
       const res = await fetch("/api/download", {
         method: "POST",
@@ -102,8 +160,10 @@ export default function Home() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+      toast.success("Document exported", { description: ".docx file downloaded successfully" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Download failed.");
+      const message = err instanceof Error ? err.message : "Download failed.";
+      toast.error("Export failed", { description: message });
     } finally {
       setDownloading(false);
     }
@@ -129,7 +189,7 @@ export default function Home() {
 
         <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 flex-1">
           {/* Hero */}
-          <div className="pt-10 sm:pt-14 pb-8 max-w-2xl">
+          {/*<div className="pt-10 sm:pt-14 pb-8 max-w-2xl">
             <div className="flex items-center gap-2.5 mb-3">
               <span className="overline text-[var(--accent)]">Intelligent Tailoring Engine</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
@@ -142,10 +202,10 @@ export default function Home() {
               tailored single-page rewrite you can export as a{" "}
               <span className="font-mono text-[var(--ink)]">.docx</span>. No invented experience, ever.
             </p>
-          </div>
+          </div>*/}
 
           {/* Split grid */}
-          <div className="grid lg:grid-cols-[minmax(360px,420px)_1fr] gap-8 items-start pb-16">
+          <div className="grid lg:grid-cols-[minmax(360px,420px)_1fr] gap-8 items-start py-4">
             <motion.div
               initial={{ opacity: 0, x: -15 }}
               animate={{ opacity: 1, x: 0 }}
@@ -155,7 +215,6 @@ export default function Home() {
               <InputPanel
                 provider={settings.provider}
                 loading={loading}
-                error={error}
                 onSubmit={handleSubmit}
                 onOpenSettings={() => setSettingsOpen(true)}
               />
@@ -190,6 +249,14 @@ export default function Home() {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onChange={updateSettings}
+      />
+      <Toaster
+        position="top-center"
+        theme="system"
+        className="z-50"
+        toastOptions={{
+          duration: 4000,
+        }}
       />
     </div>
   );

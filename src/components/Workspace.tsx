@@ -27,7 +27,7 @@ function EmptyState() {
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[480px] flex flex-col items-center justify-center text-center px-8"
+      className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[480px] lg:min-h-[720px] flex flex-col items-center justify-center text-center px-8"
     >
       <div className="absolute inset-0 bg-dotgrid opacity-30 pointer-events-none" />
       <CropMarks />
@@ -58,7 +58,7 @@ function EmptyState() {
 
 function LoadingState() {
   return (
-    <div className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[480px] flex flex-col items-center justify-center text-center py-16 px-6">
+    <div className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[480px] lg:min-h-[720px] flex flex-col items-center justify-center text-center py-16 px-6">
       <div className="absolute inset-0 bg-dotgrid opacity-20 pointer-events-none" />
       <div className="scanline absolute inset-0 pointer-events-none" />
       <CropMarks />

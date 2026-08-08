@@ -19,23 +19,26 @@ import {
 } from "@phosphor-icons/react";
 import type { AppSettings, ThemePreference } from "@/lib/settings";
 import type { AIProvider } from "@/lib/ai";
+import Link from "next/link";
 
 const PROVIDER_META: Record<
   AIProvider,
-  { label: string; keyName: string; placeholder: string; hint: string; badge: string }
+  { label: string; keyName: string; placeholder: string; hint: string; link: string; badge: string }
 > = {
   gemini: {
     label: "Gemini",
     keyName: "GEMINI_API_KEY",
     placeholder: "AIzaSy…",
-    hint: "Google's free tier. Get a key at aistudio.google.com/apikey",
+    hint: "Google's free tier. Get a key at ",
+    link: "https://aistudio.google.com/apikey",
     badge: "Google",
   },
   groq: {
     label: "Groq",
     keyName: "GROQ_API_KEY",
     placeholder: "gsk_…",
-    hint: "Blazing-fast open models. Get a key at console.groq.com/keys",
+    hint: "Blazing-fast open models. Get a key at ",
+    link: "https://console.groq.com/keys",
     badge: "Open models",
   },
 };
@@ -261,11 +264,11 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                         </button>
                       </div>
 
-                      <p className="text-[11px] text-[var(--muted)] mt-2 leading-relaxed">{meta.hint}</p>
+                      <p className="text-[11px] text-[var(--muted)] mt-2 leading-relaxed">{meta.hint} <Link href={meta.link} target="_blank" className="text-[var(--muted)] hover:text-[var(--ink)]">{meta.link}</Link> </p>
 
                       {isResult && (
                         <div
-                          className={`mt-2 text-xs px-3 py-2 rounded-lg border flex items-start gap-2 font-mono ${
+                          className={`mt-2 text-xs text-wrap overflow-auto thin-scrollbar p-2 rounded-lg border flex items-start gap-2 font-mono ${
                             testResult.ok
                               ? "border-[var(--green)] bg-[var(--green-soft)] text-[var(--green)]"
                               : "border-[var(--red)] bg-[var(--red-soft)] text-[var(--red)]"
@@ -276,7 +279,7 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                           ) : (
                             <Warning size={14} weight="fill" className="flex-shrink-0 mt-0.5" />
                           )}
-                          <span className="break-words leading-relaxed">{testResult.message}</span>
+                          <span className="wrap-break-words leading-relaxed">{testResult.message}</span>
                         </div>
                       )}
                     </div>

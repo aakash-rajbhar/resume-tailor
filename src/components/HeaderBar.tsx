@@ -4,6 +4,7 @@ import { GearSix } from "@phosphor-icons/react";
 import ThemeToggle from "./ThemeToggle";
 import ProviderChip from "./ProviderChip";
 import type { AIProvider } from "@/lib/ai";
+import Link from "next/link";
 
 interface HeaderBarProps {
   isDark: boolean;
@@ -23,7 +24,7 @@ export default function HeaderBar({
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        <a href="#top" className="flex items-center gap-3 group">
+        <Link href="/" className="flex items-center gap-3 group">
           <span className="w-9 h-9 rounded-xl bg-[var(--ink)] text-[var(--paper)] flex items-center justify-center font-display text-base font-semibold tracking-tight shadow-sm group-hover:scale-105 transition-transform">
             R<span className="text-[var(--accent)]">T</span>
           </span>
@@ -31,7 +32,7 @@ export default function HeaderBar({
             <span className="block font-display text-lg tracking-tight">Resume Tailor</span>
             <span className="block overline text-[var(--muted)] mt-1">ATS Match Studio</span>
           </span>
-        </a>
+        </Link>
 
         <div className="flex items-center gap-2">
           <ProviderChip provider={provider} hasKey={hasKey} onClick={onOpenSettings} />
