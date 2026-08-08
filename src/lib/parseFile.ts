@@ -1,5 +1,4 @@
 import mammoth from "mammoth";
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 
 // Polyfill DOMMatrix for pdfjs-dist (required in Node.js/Vercel serverless)
 if (typeof globalThis.DOMMatrix !== "function") {
@@ -18,15 +17,6 @@ if (typeof globalThis.DOMMatrix !== "function") {
   }
 }
 
-// Configure pdfjs-dist to use the local worker file
-// The worker is in node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs
-// We import pdfjs first to ensure it's available, then set the worker path
-if (typeof pdfjs.GlobalWorkerOptions !== "undefined") {
-  // Use the absolute path that will be resolved at runtime in node_modules
-  // On Vercel, node_modules is available so this path works
-  pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
-}
-
 /** Extracts plain text from an uploaded resume file (.docx, .pdf, or .txt). */
 export async function extractTextFromFile(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -40,6 +30,17 @@ export async function extractTextFromFile(file: File): Promise<string> {
   if (name.endsWith(".pdf")) {
     // pdf-parse v2 uses a class-based API: new PDFParse({ data }).getText()
     const { PDFParse } = await import("pdf-parse");
+    
+    // Configure pdfjs-dist worker dynamically to avoid module evaluation issues
+    try {
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      if (pdfjs.GlobalWorkerOptions && !pdfjs.GlobalWorkerOptions.workerSrc) {
+        pdfjs.GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
+      }
+    } catch {
+      // Worker config is optional - pdf-parse may handle it internally
+    }
+
     const parser = new PDFParse({ data: buffer });
     try {
       const result = await parser.getText();
