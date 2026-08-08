@@ -1,5 +1,12 @@
 import mammoth from "mammoth";
 
+// Polyfill DOMMatrix for pdfjs-dist (required in Node.js/Vercel serverless)
+if (typeof globalThis.DOMMatrix === "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { DOMMatrix } = require("dommatrix");
+  globalThis.DOMMatrix = DOMMatrix as any;
+}
+
 /** Extracts plain text from an uploaded resume file (.docx, .pdf, or .txt). */
 export async function extractTextFromFile(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
