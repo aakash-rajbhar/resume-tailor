@@ -3,7 +3,7 @@ import mammoth from "mammoth";
 // Polyfill DOMMatrix for pdfjs-dist (required in Node.js/Vercel serverless)
 if (typeof globalThis.DOMMatrix === "undefined") {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { DOMMatrix } = require("dommatrix");
+  const DOMMatrix = require("dommatrix");
   globalThis.DOMMatrix = DOMMatrix as any;
 }
 
