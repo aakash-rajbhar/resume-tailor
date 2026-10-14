@@ -2,17 +2,15 @@
 
 import { motion } from "motion/react";
 import { Ruler, Check, ArrowCounterClockwise, CheckCircle } from "@phosphor-icons/react";
-import CropMarks from "./CropMarks";
 import ResultsWorkspace from "./ResultsWorkspace";
 import type { TailoredResume } from "@/lib/types";
-
-const FEATURES = ["Honest gap analysis", "Realistic match score", ".docx export"];
+const FEATURES = ["Honest gap analysis", "ATS match score", ".docx single-page export"];
 
 const LOADING_STEPS = [
-  { delay: 0.4, text: "Parsing structure & contact info" },
-  { delay: 1.1, text: "Running keyword intersection vs job description" },
-  { delay: 1.9, text: "Aligning experience bullet points" },
-  { delay: 2.7, text: "Preparing single-page layout", active: true },
+  { delay: 0.3, text: "Extracting skills and experience structure" },
+  { delay: 0.9, text: "Analyzing job description requirements" },
+  { delay: 1.5, text: "Calculating true keyword alignment & score" },
+  { delay: 2.1, text: "Formatting ATS-optimized single-page rewrite", active: true },
 ];
 
 interface WorkspaceProps {
@@ -25,28 +23,46 @@ interface WorkspaceProps {
 function EmptyState() {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 0, scale: 0.99 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[480px] lg:min-h-[720px] flex flex-col items-center justify-center text-center px-8"
+      className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[460px] lg:min-h-[640px] flex flex-col items-center justify-center text-center p-8 sm:p-12 shadow-xs"
     >
-      <div className="absolute inset-0 bg-dotgrid opacity-30 pointer-events-none" />
-      <CropMarks />
-      <div className="relative">
-        <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-[var(--line)] flex items-center justify-center text-[var(--muted)] mb-6 rotate-3 bg-[var(--surface-2)]/40 mx-auto">
-          <Ruler size={28} weight="duotone" />
+      <div className="max-w-md mx-auto flex flex-col items-center">
+        {/* Minimalist document preview illustration */}
+        <div className="w-14 h-14 rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] flex items-center justify-center text-[var(--muted)] mb-5 shadow-xs">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
         </div>
-        <h3 className="font-display text-2xl tracking-tight">Match engine idle</h3>
-        <p className="text-sm text-[var(--muted)] max-w-sm mx-auto mt-2 leading-relaxed">
-          Feed in your resume and the target job description on the left, then fire the scanner for an
-          honest gap report and a tailored rewrite.
+
+        <h3 className="text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)]">
+          Ready to optimize your resume
+        </h3>
+        <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed">
+          Provide your current resume and the target job description to run an ATS integrity check, identify missing requirements, and generate a tailored rewrite.
         </p>
-        <div className="mt-7 flex flex-wrap gap-2 justify-center">
+
+        {/* Feature badges */}
+        <div className="mt-6 flex flex-wrap gap-2 justify-center">
           {FEATURES.map((f) => (
             <span
               key={f}
-              className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[var(--muted)] px-2.5 py-1 rounded-full border border-[var(--line)] bg-[var(--surface)]"
+              className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--muted)] px-3 py-1 rounded-full border border-[var(--line)] bg-[var(--surface-2)]/60"
             >
-              <Check size={11} weight="bold" className="text-[var(--green)]" />
+              <Check size={12} weight="bold" className="text-[var(--green)]" />
               {f}
             </span>
           ))}
@@ -58,31 +74,30 @@ function EmptyState() {
 
 function LoadingState() {
   return (
-    <div className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[480px] lg:min-h-[720px] flex flex-col items-center justify-center text-center py-16 px-6">
-      <div className="absolute inset-0 bg-dotgrid opacity-20 pointer-events-none" />
-      <div className="scanline absolute inset-0 pointer-events-none" />
-      <CropMarks />
-      <div className="relative">
-        <div className="relative mb-7 flex items-center justify-center">
-          <div className="absolute -inset-5 rounded-full border border-[var(--green)]/30 animate-ping" />
-          <div className="w-16 h-16 rounded-2xl border border-[var(--line)] bg-[var(--surface)] flex items-center justify-center text-[var(--ink)] shadow-inner">
-            <ArrowCounterClockwise size={26} weight="bold" className="animate-spin" />
-          </div>
+    <div className="paper-card rounded-2xl relative overflow-hidden h-full min-h-[460px] lg:min-h-[640px] flex flex-col items-center justify-center text-center p-8 sm:p-12 shadow-xs">
+      <div className="max-w-sm mx-auto flex flex-col items-center w-full">
+        <div className="w-12 h-12 rounded-xl border border-[var(--line)] bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink)] mb-6 shadow-xs">
+          <ArrowCounterClockwise size={22} weight="bold" className="animate-spin text-[var(--ink)]" />
         </div>
 
-        <h3 className="overline text-[var(--accent)] mb-6">Analyzing Resume Integrity</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--ink)] mb-1">
+          Tailoring in Progress
+        </h3>
+        <p className="text-xs text-[var(--muted)] mb-6">
+          Analyzing resume against job requirements
+        </p>
 
-        <div className="max-w-sm space-y-2.5 text-left font-mono text-xs text-[var(--muted)] border-l border-[var(--line)] pl-4 py-1">
+        <div className="w-full space-y-2.5 text-left font-mono text-xs text-[var(--muted)] border-l border-[var(--line)] pl-4 py-1">
           {LOADING_STEPS.map((s) => (
             <motion.p
               key={s.text}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: s.delay }}
               className="flex items-center gap-2.5"
             >
               {s.active ? (
-                <span className="w-3.5 h-3.5 rounded-full border border-dashed border-[var(--green)] animate-spin flex-shrink-0" />
+                <span className="w-3.5 h-3.5 rounded-full border-2 border-[var(--ink)] border-t-transparent animate-spin flex-shrink-0" />
               ) : (
                 <CheckCircle size={15} weight="fill" className="text-[var(--green)] flex-shrink-0" />
               )}

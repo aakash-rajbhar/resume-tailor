@@ -1,6 +1,6 @@
 "use client";
 
-import { GearSix } from "@phosphor-icons/react";
+import { Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import ProviderChip from "./ProviderChip";
 import type { AIProvider } from "@/lib/ai";
@@ -12,6 +12,7 @@ interface HeaderBarProps {
   provider: AIProvider;
   hasKey: boolean;
   onOpenSettings: () => void;
+  onHowItWorksClick?: () => void;
 }
 
 export default function HeaderBar({
@@ -20,30 +21,59 @@ export default function HeaderBar({
   provider,
   hasKey,
   onOpenSettings,
+  onHowItWorksClick,
 }: HeaderBarProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-3 group">
-          <span className="w-9 h-9 rounded-xl bg-[var(--ink)] text-[var(--paper)] flex items-center justify-center font-display text-base font-semibold tracking-tight shadow-sm group-hover:scale-105 transition-transform">
-            R<span className="text-[var(--accent)]">T</span>
-          </span>
-          <span className="leading-none">
-            <span className="block font-display text-lg tracking-tight">Resume Tailor</span>
-            <span className="block overline text-[var(--muted)] mt-1">ATS Match Studio</span>
-          </span>
+    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-md transition-colors">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-lg bg-[var(--surface)] border border-[var(--line)] flex items-center justify-center text-[var(--ink)] shadow-xs group-hover:border-[var(--muted)] transition-all">
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="9" y1="13" x2="15" y2="13" />
+              <line x1="9" y1="17" x2="13" y2="17" />
+            </svg>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-sans text-[15px] sm:text-base font-semibold tracking-tight text-[var(--ink)]">
+              Resume<span className="text-[var(--muted)] font-normal">Tailor</span>
+            </span>
+            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-[var(--muted)] bg-[var(--surface-2)] border border-[var(--line)]">
+              Studio
+            </span>
+          </div>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {onHowItWorksClick && (
+            <button
+              type="button"
+              onClick={onHowItWorksClick}
+              className="hidden md:inline-block text-xs font-medium text-[var(--muted)] hover:text-[var(--ink)] transition-colors cursor-pointer mr-1"
+            >
+              How it works
+            </button>
+          )}
           <ProviderChip provider={provider} hasKey={hasKey} onClick={onOpenSettings} />
           <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
           <button
             type="button"
             onClick={onOpenSettings}
             aria-label="Open settings"
-            className="w-9 h-9 rounded-lg border border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors flex items-center justify-center"
+            title="Open settings"
+            className="w-8 h-8 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] transition-all flex items-center justify-center shadow-xs cursor-pointer"
           >
-            <GearSix size={16} weight="bold" />
+            <Settings size={15} />
           </button>
         </div>
       </div>

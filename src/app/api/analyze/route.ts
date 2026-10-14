@@ -16,6 +16,10 @@ export async function POST(req: NextRequest) {
     const provider = (formData.get("provider") as AIProvider) || "gemini";
     const geminiKey = (formData.get("geminiKey") as string) || "";
     const groqKey = (formData.get("groqKey") as string) || "";
+    const geminiModel = (formData.get("geminiModel") as string) || undefined;
+    const groqModel = (formData.get("groqModel") as string) || undefined;
+    const additionalPrompt = (formData.get("additionalPrompt") as string) || "";
+    const singlePage = formData.get("singlePage") !== "false";
 
     if (!jdText.trim()) {
       return NextResponse.json({ error: "Job description is required." }, { status: 400 });
@@ -33,11 +37,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const userPrompt = buildUserPrompt(resumeText, jdText);
+    const userPrompt = buildUserPrompt(resumeText, jdText, additionalPrompt, singlePage);
     const raw = await callAI(SYSTEM_PROMPT, userPrompt, {
       provider,
       geminiKey: geminiKey || undefined,
       groqKey: groqKey || undefined,
+      geminiModel,
+      groqModel,
     });
     const tailored = parseAIJson<TailoredResume>(raw);
 

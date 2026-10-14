@@ -10,7 +10,6 @@ import {
   Sparkle,
   ArrowRight,
 } from "@phosphor-icons/react";
-import CropMarks from "./CropMarks";
 import type { AIProvider } from "@/lib/ai";
 
 export interface InputPayload {
@@ -56,13 +55,13 @@ function base64ToFile(base64: string, fileName: string, fileType: string): File 
   return new File([u8arr], fileName, { type: mime });
 }
 
-function StepHeader({ step, children }: { step: string; children: React.ReactNode }) {
+function StepHeader({ step, title }: { step: string; title: string }) {
   return (
-    <div className="flex items-center gap-2.5 mb-3">
-      <span className="flex items-center justify-center w-6 h-6 rounded-md bg-(--ink) text-(--paper) text-[11px] font-mono font-bold">
+    <div className="flex items-center gap-2">
+      <span className="flex items-center justify-center w-5 h-5 rounded text-[11px] font-mono font-semibold bg-[var(--surface-2)] text-[var(--ink)] border border-[var(--line)]">
         {step}
       </span>
-      <span className="text-(--ink) opacity-70">{children}</span>
+      <span className="text-xs font-semibold tracking-wide text-[var(--ink)] uppercase">{title}</span>
     </div>
   );
 }
@@ -190,30 +189,28 @@ export default function InputPanel({
   return (
     <form
       onSubmit={handleSubmit}
-      className="paper-card rounded-2xl p-6 relative overflow-hidden flex flex-col gap-6"
+      className="paper-card rounded-2xl p-6 relative flex flex-col gap-6 shadow-xs"
     >
-      <CropMarks />
-
       {/* STEP 1 — RESUME SOURCE */}
       <div>
         <div className="flex items-center justify-between mb-3 gap-2">
-          <StepHeader step="1">Resume Source</StepHeader>
-          <div className="flex p-0.5 rounded-lg bg-(--surface-2) border border-(--line) relative">
+          <StepHeader step="1" title="Resume Source" />
+          <div className="flex p-0.5 rounded-lg bg-[var(--surface-2)] border border-[var(--line)]">
             {(["upload", "paste"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`relative z-10 font-mono text-[11px] px-3 py-1.5 rounded-md transition-colors ${
+                className={`relative z-10 text-xs font-medium px-3 py-1 rounded-md transition-all ${
                   mode === m
-                    ? "text-(--paper) font-bold"
-                    : "text-(--muted) hover:text-(--ink)"
+                    ? "text-[var(--paper)] font-semibold"
+                    : "text-[var(--muted)] hover:text-[var(--ink)]"
                 }`}
               >
                 {mode === m && (
                   <motion.span
                     layoutId="mode-bg"
-                    className="absolute inset-0 bg-(--ink) rounded-md -z-10"
+                    className="absolute inset-0 bg-[var(--ink)] rounded-md -z-10"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
@@ -227,23 +224,22 @@ export default function InputPanel({
           {mode === "upload" ? (
             <motion.div
               key="upload"
-              initial={{ opacity: 0, y: 5 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
             >
               <div
                 onDragOver={handleDrag}
                 onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
+                className={`border border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                   dragActive
-                    ? "border-(--green) bg-(--green-soft)/60 scale-[0.99]"
+                    ? "border-[var(--green)] bg-[var(--green-soft)]/50 scale-[0.99]"
                     : resumeFile
-                      ? "border-(--green) bg-(--green-soft)/40"
-                      : "border-(--line) hover:border-(--ink) hover:bg-(--surface-2)/50"
+                      ? "border-[var(--line)] bg-[var(--surface-2)]/40"
+                      : "border-[var(--line)] bg-[var(--surface-2)]/20 hover:bg-[var(--surface-2)]/50 hover:border-[var(--muted)]"
                 }`}
               >
                 <input
@@ -256,44 +252,45 @@ export default function InputPanel({
 
                 {resumeFile ? (
                   <div className="flex flex-col items-center gap-1.5 w-full">
-                    <div className="w-11 h-11 rounded-full bg-(--green-soft) flex items-center justify-center text-(--green)">
-                      <Check size={20} weight="bold" />
+                    <div className="w-10 h-10 rounded-full bg-[var(--green-soft)] flex items-center justify-center text-[var(--green)]">
+                      <Check size={18} weight="bold" />
                     </div>
-                    <p className="text-sm font-semibold max-w-[220px] truncate">{resumeFile.name}</p>
-                    <p className="font-mono text-[10px] text-(--muted)">
-                      {(resumeFile.size / 1024).toFixed(1)} KB · PDF/DOCX/TXT
+                    <p className="text-sm font-medium text-[var(--ink)] max-w-[240px] truncate">{resumeFile.name}</p>
+                    <p className="font-mono text-[11px] text-[var(--muted)]">
+                      {(resumeFile.size / 1024).toFixed(1)} KB · Ready
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile();
-                        }}
-                        className="text-xs text-(--red) hover:underline flex items-center gap-1 font-mono"
-                      >
-                        <Trash size={14} weight="bold" /> Remove
-                      </button>
+                    <div className="flex items-center gap-3 mt-1.5">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           fileInputRef.current?.click();
                         }}
-                        className="text-xs text-(--accent) hover:underline flex items-center gap-1 font-mono"
+                        className="text-xs text-[var(--ink)] hover:underline flex items-center gap-1 transition-colors"
                       >
-                        <ArrowCounterClockwise size={14} weight="bold" /> Replace
+                        <ArrowCounterClockwise size={13} weight="bold" /> Replace
+                      </button>
+                      <span className="text-[var(--line)]">·</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile();
+                        }}
+                        className="text-xs text-[var(--red)] hover:underline flex items-center gap-1 transition-colors"
+                      >
+                        <Trash size={13} weight="bold" /> Remove
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-1">
-                    <span className="w-12 h-12 rounded-xl bg-(--surface-2) flex items-center justify-center text-(--muted) mb-2 rotate-3">
-                      <UploadSimple size={22} weight="duotone" />
+                    <span className="w-10 h-10 rounded-lg bg-[var(--surface-2)] border border-[var(--line)] flex items-center justify-center text-[var(--muted)] mb-2 shadow-xs">
+                      <UploadSimple size={20} weight="regular" />
                     </span>
-                    <p className="text-sm font-semibold">Drag & drop resume file here</p>
-                    <p className="text-xs text-(--muted)">or click to browse your files</p>
-                    <span className="font-mono text-[9px] mt-2 px-2 py-0.5 rounded bg-(--surface) border border-(--line) text-(--muted) uppercase tracking-wider">
+                    <p className="text-sm font-medium text-[var(--ink)]">Upload resume file</p>
+                    <p className="text-xs text-[var(--muted)]">Drag & drop or click to browse</p>
+                    <span className="font-mono text-[10px] mt-2 px-2 py-0.5 rounded bg-[var(--surface)] border border-[var(--line)] text-[var(--muted)]">
                       PDF · DOCX · TXT
                     </span>
                   </div>
@@ -303,10 +300,10 @@ export default function InputPanel({
           ) : (
             <motion.div
               key="paste"
-              initial={{ opacity: 0, y: 5 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
             >
               <div className="relative">
                 <textarea
@@ -314,13 +311,13 @@ export default function InputPanel({
                   onChange={(e) => setResumeText(e.target.value)}
                   placeholder="Paste your original resume text here…"
                   rows={7}
-                  className="w-full p-3.5 rounded-xl border border-(--line) bg-(--surface) font-mono text-sm leading-relaxed resize-y min-h-35 focus:outline-none focus:ring-1 focus:ring-(--accent) focus:border-(--accent) transition-colors thin-scrollbar pr-24"
+                  className="w-full p-3.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] font-mono text-xs leading-relaxed resize-y min-h-[140px] focus:outline-none focus:border-[var(--ink)] transition-colors thin-scrollbar pr-20"
                 />
                 {resumeText && (
                   <button
                     type="button"
                     onClick={clearText}
-                    className="absolute right-3 bottom-3 text-xs text-(--muted) hover:text-(--red) flex items-center gap-1 font-mono transition-colors"
+                    className="absolute right-3 bottom-3 text-xs text-[var(--muted)] hover:text-[var(--red)] flex items-center gap-1 font-mono transition-colors"
                   >
                     <Trash size={12} weight="bold" /> Clear
                   </button>
@@ -332,53 +329,50 @@ export default function InputPanel({
       </div>
 
       {/* STEP 2 — JOB DESCRIPTION */}
-      <div className="border-t border-(--line) pt-6">
-        <StepHeader step="2">Target Job Description</StepHeader>
-        <div className="p-0.5 min-h-37.5 overflow-hidden rounded-xl bg-(--surface) border border-(--line) focus:border-(--accent)">
-          <textarea
-            value={jdText}
-            onChange={(e) => setJdText(e.target.value)}
-            placeholder="Paste the full job description or core requirements here…"
-            rows={8}
-            className="w-full p-3.5 rounded-xl text-sm leading-relaxed resize-y min-h-37.5 focus:outline-none!  focus:border-none transition-colors thin-scrollbar"
-          />
+      <div className="border-t border-[var(--line)] pt-5">
+        <div className="mb-3">
+          <StepHeader step="2" title="Target Job Description" />
         </div>
-        <div className="flex justify-between items-center mt-2 font-mono text-[10px] text-(--muted)">
-          <span>Minimum 20 characters required</span>
+        <textarea
+          value={jdText}
+          onChange={(e) => setJdText(e.target.value)}
+          placeholder="Paste the target job description or requirements here…"
+          rows={7}
+          className="w-full p-3.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-sm leading-relaxed resize-y min-h-[140px] focus:outline-none focus:border-[var(--ink)] transition-colors thin-scrollbar"
+        />
+        <div className="flex justify-between items-center mt-2 font-mono text-[11px] text-[var(--muted)]">
+          <span>Min 20 characters</span>
           <span>{jdText.trim().length} chars</span>
         </div>
       </div>
 
-      {/* SUBMIT */}
+      {/* SUBMIT BUTTON */}
       <button
         type="submit"
         disabled={!canSubmit}
-        className="group relative w-full py-4 px-5 rounded-xl font-mono text-xs tracking-[0.18em] font-bold uppercase flex items-center justify-center gap-2.5 bg-(--ink) text-(--paper) transition-all duration-300 hover:shadow-[0_10px_36px_-14px_var(--accent)] active:scale-[0.985] disabled:opacity-35 disabled:pointer-events-none overflow-hidden"
+        className="w-full py-3.5 px-4 rounded-xl font-sans text-sm font-semibold tracking-wide flex items-center justify-center gap-2 bg-[var(--ink)] text-[var(--paper)] hover:opacity-90 active:scale-[0.99] transition-all shadow-xs disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
       >
         {loading ? (
           <>
             <ArrowCounterClockwise size={16} weight="bold" className="animate-spin" />
-            <span>Analyzing & re-weaving…</span>
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div className="absolute w-full h-0.5 bg-(--accent) top-0 left-0 animate-[bounce_1.5s_infinite]" />
-            </div>
+            <span>Analyzing & Optimizing…</span>
           </>
         ) : (
           <>
-            <Sparkle size={16} weight="fill" className="text-(--accent) group-hover:rotate-12 transition-transform" />
-            <span>Scan · Match · Tailor</span>
-            <ArrowRight size={16} weight="bold" className="group-hover:translate-x-1 transition-transform" />
+            <Sparkle size={16} weight="fill" />
+            <span>Match & Tailor Resume</span>
+            <ArrowRight size={15} weight="bold" />
           </>
         )}
       </button>
 
-      <p className="text-center font-mono text-[10px] uppercase tracking-widest text-(--muted) -mt-2">
-        Engine: <span className="text-(--accent) font-bold">{PROVIDER_LABEL[provider]}</span>
+      <p className="text-center font-mono text-[11px] text-[var(--muted)] -mt-2">
+        Engine: <span className="text-[var(--ink)] font-semibold">{PROVIDER_LABEL[provider]}</span>
         {" · "}
         <button
           type="button"
           onClick={onOpenSettings}
-          className="underline decoration-dotted hover:text-(--ink) transition-colors"
+          className="underline underline-offset-2 hover:text-[var(--ink)] transition-colors"
         >
           configure
         </button>

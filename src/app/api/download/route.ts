@@ -6,8 +6,14 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const tailored = (await req.json()) as TailoredResume;
-    const buffer = await buildResumeDocx(tailored);
+    const body = (await req.json()) as
+      | TailoredResume
+      | { resume: TailoredResume; singlePage?: boolean };
+
+    const tailored: TailoredResume = "resume" in body && body.resume ? body.resume : (body as TailoredResume);
+    const singlePage = "singlePage" in body ? body.singlePage !== false : true;
+
+    const buffer = await buildResumeDocx(tailored, { singlePage });
     const filename = `${(tailored.name || "Resume").replace(/\s+/g, "_")}_Tailored.docx`;
 
     return new NextResponse(new Uint8Array(buffer), {

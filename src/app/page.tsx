@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { motion } from "motion/react";
+import { useEffect, useState, useSyncExternalStore, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Toaster, toast } from "sonner";
 import HeaderBar from "@/components/HeaderBar";
-import InputPanel, { type InputPayload } from "@/components/InputPanel";
-import Workspace from "@/components/Workspace";
+import Stepper, { type FlowStep } from "@/components/ui/Stepper";
+import Step1Resume from "@/components/workspace/Step1Resume";
+import Step2Job from "@/components/workspace/Step2Job";
+import Step3Loading from "@/components/workspace/Step3Loading";
+import ResultsWorkspaceNew from "@/components/results/ResultsWorkspaceNew";
+import LandingHero from "@/components/landing/LandingHero";
 import SettingsPanel from "@/components/SettingsPanel";
 import {
   subscribeSettings,
@@ -30,55 +34,91 @@ export default function Home() {
   const settings = useSyncExternalStore(
     subscribeSettings,
     getSettingsSnapshot,
-    () => DEFAULT_SETTINGS
+    () => DEFAULT_SETTINGS,
   );
   const systemDark = useSyncExternalStore(
     subscribeSystemTheme,
     getSystemThemeSnapshot,
-    () => false
+    () => false,
   );
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState<FlowStep>(1);
+
+  // Resume state
+  const [resumeMode, setResumeMode] = useState<"upload" | "paste">("upload");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeText, setResumeText] = useState("");
+
+  // Job description state
+  const [jdText, setJdText] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [company, setCompany] = useState("");
+  const [focusTone, setFocusTone] = useState("ats");
+  const [additionalPrompt, setAdditionalPrompt] = useState("");
+  const [singlePage, setSinglePage] = useState(true);
+
+  // Output state
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [result, setResult] = useState<TailoredResume | null>(null);
+
+  const workspaceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     applyTheme(settings.theme);
   }, [settings.theme]);
 
   const updateSettings = (next: typeof settings) => writeSettings(next);
+  const isDark =
+    settings.theme === "dark" || (settings.theme === "system" && systemDark);
+  const toggleTheme = () =>
+    updateSettings({ ...settings, theme: isDark ? "light" : "dark" });
+  const hasKey =
+    settings.provider === "gemini" ? !!settings.geminiKey : !!settings.groqKey;
 
-  const isDark = settings.theme === "dark" || (settings.theme === "system" && systemDark);
-
-  const toggleTheme = () => updateSettings({ ...settings, theme: isDark ? "light" : "dark" });
-
-  const hasKey = settings.provider === "gemini" ? !!settings.geminiKey : !!settings.groqKey;
-
-  // Parse and format quota/rate-limit errors for user-friendly display
-  function formatErrorMessage(error: string): { title: string; description: string; action?: { label: string; onClick: () => void } } {
-    // Check for Gemini quota exceeded error
-    if (error.includes("quota") || error.includes("QUOTA_EXCEEDED") || error.includes("rate limit") || error.includes("RATE_LIMIT_EXCEEDED")) {
-      const isGemini = error.includes("generativelanguage.googleapis.com") || error.includes("gemini") || error.includes("Gemini");
-
+  // Format errors
+  function formatErrorMessage(error: string): {
+    title: string;
+    description: string;
+    action?: { label: string; onClick: () => void };
+  } {
+    if (
+      error.includes("quota") ||
+      error.includes("QUOTA_EXCEEDED") ||
+      error.includes("rate limit") ||
+      error.includes("RATE_LIMIT_EXCEEDED")
+    ) {
+      const isGemini =
+        error.includes("generativelanguage.googleapis.com") ||
+        error.includes("gemini") ||
+        error.includes("Gemini");
       if (isGemini) {
         return {
-          title: "Gemini API quota exceeded",
-          description: "You've hit the free tier limit for Gemini. Please wait a moment before trying again, or add a Groq API key in settings for higher limits.",
+          title: "Gemini API quota reached",
+          description:
+            "You've hit the free tier quota limit. Wait a minute or switch to Groq in settings for higher limits.",
         };
       }
-      // Generic quota error
       return {
         title: "API rate limit reached",
-        description: "Too many requests. Please wait a bit before trying again.",
+        description:
+          "Too many requests. Please wait a moment before trying again.",
       };
     }
 
-    // Check for missing/invalid API key
-    if (error.includes("API key") || error.includes("API_KEY") || error.includes("authentication") || error.includes("unauthorized") || error.includes("401") || error.includes("403")) {
+    if (
+      error.includes("API key") ||
+      error.includes("API_KEY") ||
+      error.includes("authentication") ||
+      error.includes("unauthorized") ||
+      error.includes("401") ||
+      error.includes("403")
+    ) {
       return {
         title: "Invalid or missing API key",
-        description: "Your API key appears to be invalid or missing. Please check your key in settings.",
+        description:
+          "Your API key appears to be invalid or missing. Please check your key in settings.",
         action: {
           label: "Open settings",
           onClick: () => setSettingsOpen(true),
@@ -86,45 +126,58 @@ export default function Home() {
       };
     }
 
-    // Check for network errors
-    if (error.includes("network") || error.includes("fetch") || error.includes("Failed to fetch") || error.includes("ECONNREFUSED")) {
+    if (
+      error.includes("network") ||
+      error.includes("fetch") ||
+      error.includes("Failed to fetch") ||
+      error.includes("ECONNREFUSED")
+    ) {
       return {
         title: "Network error",
-        description: "Unable to connect to the AI service. Check your internet connection.",
+        description:
+          "Unable to connect to the AI service. Please check your internet connection.",
       };
     }
 
-    // Default fallback
     return {
       title: "Failed to analyze resume",
       description: error.length > 200 ? error.slice(0, 200) + "…" : error,
     };
   }
 
-  async function handleSubmit(payload: InputPayload) {
+  // Handle Submit
+  async function handleSubmit() {
     setLoading(true);
     setResult(null);
+    setCurrentStep(3);
+
     try {
       const fd = new FormData();
-      fd.set("jdText", payload.jdText);
+      fd.set("jdText", jdText);
       fd.set("provider", settings.provider);
       fd.set("geminiKey", settings.geminiKey);
       fd.set("groqKey", settings.groqKey);
-      if (payload.resumeFile) {
-        fd.set("resumeFile", payload.resumeFile);
+      fd.set("geminiModel", settings.geminiModel || "gemini-3.8-flash");
+      fd.set("groqModel", settings.groqModel || "llama-3.3-70b-versatile");
+      fd.set("additionalPrompt", additionalPrompt);
+      fd.set("singlePage", singlePage ? "true" : "false");
+      if (resumeFile) {
+        fd.set("resumeFile", resumeFile);
       } else {
-        fd.set("resumeText", payload.resumeText ?? "");
+        fd.set("resumeText", resumeText);
       }
 
       const res = await fetch("/api/analyze", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
+
       setResult(data as TailoredResume);
       toast.success("Resume tailored successfully", {
         description: `Match score: ${data.atsScoreBefore}% → ${data.atsScoreAfter}% (${data.atsScoreAfter - data.atsScoreBefore >= 0 ? "+" : ""}${data.atsScoreAfter - data.atsScoreBefore} pts)`,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong.";
+      const message =
+        err instanceof Error ? err.message : "Something went wrong.";
       const formatted = formatErrorMessage(message);
       toast.error(formatted.title, {
         description: formatted.description,
@@ -136,11 +189,14 @@ export default function Home() {
           : undefined,
         duration: formatted.action ? 10000 : 6000,
       });
+      // Return to step 2 so user can retry or adjust
+      setCurrentStep(2);
     } finally {
       setLoading(false);
     }
   }
 
+  // Handle Download DOCX
   async function handleDownload() {
     if (!result) return;
     setDownloading(true);
@@ -148,7 +204,7 @@ export default function Home() {
       const res = await fetch("/api/download", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result),
+        body: JSON.stringify({ resume: result, singlePage }),
       });
       if (!res.ok) throw new Error("Could not generate the .docx file.");
       const blob = await res.blob();
@@ -160,7 +216,9 @@ export default function Home() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success("Document exported", { description: ".docx file downloaded successfully" });
+      toast.success("Document downloaded", {
+        description: ".docx file generated successfully",
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Download failed.";
       toast.error("Export failed", { description: message });
@@ -169,13 +227,24 @@ export default function Home() {
     }
   }
 
+  const handleStartOver = () => {
+    setResult(null);
+    setCurrentStep(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleScrollToWorkspace = () => {
+    workspaceRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <div id="top" className="min-h-[100dvh] flex flex-col antialiased">
-      {/* Ambient background */}
+    <div
+      id="top"
+      className="min-h-[100dvh] flex flex-col antialiased bg-[var(--bg)] text-[var(--ink)]"
+    >
+      {/* Background grid */}
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
-        <div className="absolute inset-0 bg-dotgrid opacity-[0.45]" />
-        <div className="absolute inset-0 bg-[radial-gradient(1000px_520px_at_72%_-12%,var(--accent)_0%,transparent_55%)] opacity-[0.07]" />
-        <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_-10%_110%,var(--green)_0%,transparent_50%)] opacity-[0.05]" />
+        <div className="absolute inset-0 bg-dotgrid opacity-20" />
       </div>
 
       <div className="relative z-10 flex flex-col flex-1">
@@ -185,61 +254,146 @@ export default function Home() {
           provider={settings.provider}
           hasKey={hasKey}
           onOpenSettings={() => setSettingsOpen(true)}
+          onHowItWorksClick={handleScrollToWorkspace}
         />
 
-        <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 flex-1">
-          {/* Hero */}
-          {/*<div className="pt-10 sm:pt-14 pb-8 max-w-2xl">
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="overline text-[var(--accent)]">Intelligent Tailoring Engine</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] animate-pulse" />
-            </div>
-            <h1 className="font-display text-4xl sm:text-6xl tracking-tight leading-[1.05]">
-              Resume <em className="text-[var(--accent)] italic font-semibold">Tailor</em>
-            </h1>
-            <p className="mt-4 text-sm sm:text-base text-[var(--muted)] max-w-xl leading-relaxed">
-              Paste a job description, feed in your resume, and get an honest ATS gap analysis plus a
-              tailored single-page rewrite you can export as a{" "}
-              <span className="font-mono text-[var(--ink)]">.docx</span>. No invented experience, ever.
-            </p>
-          </div>*/}
+        <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 flex-1 py-8 sm:py-10 space-y-10">
+          {/* Landing hero visible when idle at step 1 without active result */}
+          {currentStep === 1 && !result && (
+            <LandingHero onStart={handleScrollToWorkspace} />
+          )}
 
-          {/* Split grid */}
-          <div className="grid lg:grid-cols-[minmax(360px,420px)_1fr] gap-8 items-start py-4">
-            <motion.div
-              initial={{ opacity: 0, x: -15 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="lg:sticky lg:top-24"
-            >
-              <InputPanel
-                provider={settings.provider}
-                loading={loading}
-                onSubmit={handleSubmit}
-                onOpenSettings={() => setSettingsOpen(true)}
-              />
-            </motion.div>
+          {/* Core Workspace Stepper & Cards */}
+          <div ref={workspaceRef} className="space-y-6 pt-2">
+            <Stepper
+              currentStep={currentStep}
+              onSelectStep={(step) => {
+                if (step <= 2 || result) {
+                  setCurrentStep(step);
+                }
+              }}
+              canNavigateToStep={(step) => {
+                if (step === 1) return true;
+                if (step === 2)
+                  return (
+                    (resumeMode === "upload" && !!resumeFile) ||
+                    resumeText.trim().length >= 30
+                  );
+                if (step === 3) return !!result || loading;
+                return false;
+              }}
+            />
 
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <Workspace
-                result={result}
-                loading={loading}
-                downloading={downloading}
-                onDownload={handleDownload}
-              />
-            </motion.div>
+            {/* Screen 1: Add Resume */}
+            {currentStep === 1 && (
+              <motion.div
+                key="step-1"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Step1Resume
+                  mode={resumeMode}
+                  onChangeMode={setResumeMode}
+                  file={resumeFile}
+                  onSelectFile={setResumeFile}
+                  text={resumeText}
+                  onChangeText={setResumeText}
+                  onNext={() => setCurrentStep(2)}
+                />
+              </motion.div>
+            )}
+
+            {/* Screen 2: Add Job Description */}
+            {currentStep === 2 && (
+              <motion.div
+                key="step-2"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Step2Job
+                  jdText={jdText}
+                  onChangeJdText={setJdText}
+                  additionalPrompt={additionalPrompt}
+                  onChangeAdditionalPrompt={setAdditionalPrompt}
+                  singlePage={singlePage}
+                  onChangeSinglePage={setSinglePage}
+                  jobTitle={jobTitle}
+                  onChangeJobTitle={setJobTitle}
+                  company={company}
+                  onChangeCompany={setCompany}
+                  focusTone={focusTone}
+                  onChangeFocusTone={setFocusTone}
+                  onBack={() => setCurrentStep(1)}
+                  onSubmit={handleSubmit}
+                  loading={loading}
+                />
+              </motion.div>
+            )}
+
+            {/* Screen 3: Loading or Results */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step-3"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                {loading && (
+                  <Step3Loading
+                    providerName={
+                      settings.provider === "gemini" ? "Gemini" : "Groq"
+                    }
+                  />
+                )}
+
+                {result && !loading && (
+                  <ResultsWorkspaceNew
+                    result={result}
+                    originalText={resumeText}
+                    downloading={downloading}
+                    singlePage={singlePage}
+                    onToggleSinglePage={setSinglePage}
+                    onDownloadDocx={handleDownload}
+                    onStartOver={handleStartOver}
+                    onUpdateResume={(updated) => setResult(updated)}
+                  />
+                )}
+              </motion.div>
+            )}
           </div>
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-[var(--line)] py-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row sm:justify-between items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[var(--muted)]">
-            <span>Resume Tailor · ATS Match Studio</span>
-            <span>Keys stay in your browser · Data sent only to your AI provider</span>
+        {/* Minimal Footer with essential links */}
+        <footer className="border-t border-[var(--line)] py-4 mt-12 bg-[var(--surface)]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[var(--ink)]">
+                ResumeTailor
+              </span>
+              <span>·</span>
+              <span>Calm, accurate career optimization</span>
+            </div>
+
+            <div className="flex items-center gap-6 font-medium">
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="hover:text-[var(--ink)] transition-colors cursor-pointer"
+              >
+                AI Settings
+              </button>
+              <a
+                href="#top"
+                className="hover:text-[var(--ink)] transition-colors"
+              >
+                Back to top
+              </a>
+            </div>
           </div>
         </footer>
       </div>
@@ -250,6 +404,7 @@ export default function Home() {
         settings={settings}
         onChange={updateSettings}
       />
+
       <Toaster
         position="top-center"
         theme="system"

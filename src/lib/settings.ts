@@ -6,6 +6,8 @@ export interface AppSettings {
   provider: AIProvider;
   geminiKey: string;
   groqKey: string;
+  geminiModel: string;
+  groqModel: string;
   theme: ThemePreference;
 }
 
@@ -15,6 +17,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   provider: "gemini",
   geminiKey: "",
   groqKey: "",
+  geminiModel: "gemini-3.8-flash",
+  groqModel: "llama-3.3-70b-versatile",
   theme: "system",
 };
 
@@ -30,7 +34,16 @@ function readFromStorage(): AppSettings {
   try {
     const raw = window.localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    const parsed = { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) };
+    
+    // Auto-migrate deprecated models to prevent silent failures
+    if (parsed.geminiModel === "gemini-2.0-flash" || parsed.geminiModel === "gemini-1.5-pro") {
+      parsed.geminiModel = "gemini-3.8-flash";
+    }
+    if (parsed.groqModel === "mixtral-8x7b-32768" || !parsed.groqModel) {
+      parsed.groqModel = "llama-3.3-70b-versatile";
+    }
+    return parsed;
   } catch {
     return DEFAULT_SETTINGS;
   }

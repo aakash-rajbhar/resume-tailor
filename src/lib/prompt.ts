@@ -9,13 +9,13 @@ Hard rules — never break these:
    - You MUST NEVER list a skill in "missingKeywords" if it is present in any section of the original resume.
    - Only list a keyword or skill in "missingKeywords" if it is required/mentioned in the job description AND there is absolutely zero evidence or mention of it anywhere in the original resume text.
 3. DETAILED & SUBSTANTIAL BULLET POINTS:
-   - Write rich, detailed, and action-verb-led bullet points (typically 15-25 words each).
+   - Write rich, detailed, and action-verb-led bullet points (typically 14-22 words each).
    - Each bullet point must describe: What was done, how/with what tools or technologies, and the impact or context.
    - Avoid overly short, generic, or brief points (e.g., do NOT write "Used Docker for deployment" or "Built frontend using React" as they look empty and unprofessional).
    - Instead, expand on the context and detail: "Streamlined application deployment by containerizing microservices with Docker, ensuring consistent environments across development and production."
    - Retain the technical depth, metrics, complexity, and specific tools from the original resume.
 4. RESUME DENSITY & SINGLE-PAGE LAYOUT:
-   - Structure the resume so it is a robust, well-filled, and professional single-page document (aim for 3-5 detailed bullet points per primary role, and 2-3 per project).
+   - Structure the resume so it is a robust, well-filled, and professional single-page document.
    - Do not aggressively purge or over-truncate experience details. Make sure the resume looks complete and professional, not empty or sparse.
 5. CONTACT DETAILS & LINKS RETENTION:
    - You must ALWAYS retain and format all contact details, personal links, social profiles, and websites from the original resume (including LinkedIn, GitHub, portfolio websites, and personal blogs) in the "contact" field.
@@ -39,8 +39,13 @@ Hard rules — never break these:
   "certifications": string[]
 }`;
 
-export function buildUserPrompt(resumeText: string, jdText: string): string {
-  return `RESUME (original, extracted from uploaded file):
+export function buildUserPrompt(
+  resumeText: string,
+  jdText: string,
+  additionalPrompt?: string,
+  singlePage: boolean = true
+): string {
+  let prompt = `RESUME (original, extracted from uploaded file):
 """
 ${resumeText}
 """
@@ -48,7 +53,25 @@ ${resumeText}
 JOB DESCRIPTION (target):
 """
 ${jdText}
-"""
+"""`;
 
-Tailor the resume to this job description following every rule in the system prompt. Return only the JSON object.`;
+  if (additionalPrompt && additionalPrompt.trim()) {
+    prompt += `\n\nUSER'S ADDITIONAL TAILORING INSTRUCTIONS:
+"""
+${additionalPrompt.trim()}
+"""
+Apply these specific user instructions during tailoring while staying truthful to the candidate's original background.`;
+  }
+
+  if (singlePage) {
+    prompt += `\n\nSTRICT SINGLE-PAGE RESTRAINT:
+The resulting resume MUST comfortably fit on 1 standard printed page.
+- Keep the summary to 2 crisp, impactful sentences.
+- Limit experience to 2-4 highest-impact bullets per role.
+- Limit projects to 1-2 bullets each.
+- Ensure bullet points are concise (12-18 words each) so they do not cause the document to spill onto a second page.`;
+  }
+
+  prompt += `\n\nTailor the resume to this job description following every rule in the system prompt. Return only the JSON object.`;
+  return prompt;
 }
