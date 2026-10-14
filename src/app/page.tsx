@@ -240,7 +240,7 @@ export default function Home() {
   return (
     <div
       id="top"
-      className="min-h-[100dvh] flex flex-col antialiased bg-[var(--bg)] text-[var(--ink)]"
+      className="min-h-[100dvh] flex flex-col antialiased bg-background text-ink"
     >
       {/* Background grid */}
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
@@ -369,10 +369,10 @@ export default function Home() {
         </main>
 
         {/* Minimal Footer with essential links */}
-        <footer className="border-t border-[var(--line)] py-4 mt-12 bg-[var(--surface)]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
+        <footer className="border-t border-line py-4 mt-12 bg-surface">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-[var(--ink)]">
+              <span className="font-semibold text-ink">
                 ResumeTailor
               </span>
               <span>·</span>
@@ -383,13 +383,13 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setSettingsOpen(true)}
-                className="hover:text-[var(--ink)] transition-colors cursor-pointer"
+                className="hover:text-ink transition-colors cursor-pointer"
               >
                 AI Settings
               </button>
               <a
                 href="#top"
-                className="hover:text-[var(--ink)] transition-colors"
+                className="hover:text-ink transition-colors"
               >
                 Back to top
               </a>

@@ -32,14 +32,14 @@ export default function ResultsWorkspaceNew({
   return (
     <div className="space-y-6">
       {/* Mobile Tab Switcher */}
-      <div className="flex md:hidden p-1 rounded-xl bg-[var(--surface-2)] border border-[var(--line)]">
+      <div className="flex md:hidden p-1 rounded-xl bg-surface-2 border border-line">
         <button
           type="button"
           onClick={() => setMobileTab("analysis")}
           className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
             mobileTab === "analysis"
-              ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs"
-              : "text-[var(--muted)] hover:text-[var(--ink)]"
+              ? "bg-surface text-ink shadow-xs"
+              : "text-muted hover:text-ink"
           }`}
         >
           Gap Analysis ({result.atsScoreAfter}%)
@@ -49,8 +49,8 @@ export default function ResultsWorkspaceNew({
           onClick={() => setMobileTab("document")}
           className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
             mobileTab === "document"
-              ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs"
-              : "text-[var(--muted)] hover:text-[var(--ink)]"
+              ? "bg-surface text-ink shadow-xs"
+              : "text-muted hover:text-ink"
           }`}
         >
           Tailored Resume

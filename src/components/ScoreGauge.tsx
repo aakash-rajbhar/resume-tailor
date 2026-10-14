@@ -51,9 +51,9 @@ export default function ScoreGauge({ before, after }: { before: number; after: n
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col items-center bg-[var(--surface)] p-6 rounded-xl border border-[var(--line)] shadow-inner relative overflow-hidden"
+      className="flex flex-col items-center bg-surface p-6 rounded-xl border border-line shadow-inner relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-linear-to-br from-[var(--surface-2)]/50 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-surface-2/50 to-transparent pointer-events-none" />
       <div className="absolute inset-0 bg-dotgrid opacity-20 pointer-events-none" />
       <div className="relative w-full max-w-60">
         <svg viewBox="0 0 200 112" className="w-full">

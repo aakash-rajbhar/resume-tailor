@@ -27,7 +27,7 @@ export default function ResultsWorkspace({ result, downloading, onDownload }: Re
       className="flex flex-col gap-6"
     >
       {/* Tabs + download */}
-      <div className="flex items-center justify-between border-b border-[var(--line)] gap-3">
+      <div className="flex items-center justify-between border-b border-line gap-3">
         <div className="flex gap-1">
           {(
             [
@@ -40,14 +40,14 @@ export default function ResultsWorkspace({ result, downloading, onDownload }: Re
               type="button"
               onClick={() => setActiveTab(t.value)}
               className={`relative font-mono text-xs uppercase tracking-widest py-3 px-1 mr-4 transition-colors ${
-                activeTab === t.value ? "font-bold text-[var(--ink)]" : "text-[var(--muted)] hover:text-[var(--ink)]"
+                activeTab === t.value ? "font-bold text-ink" : "text-muted hover:text-ink"
               }`}
             >
               {t.label}
               {activeTab === t.value && (
                 <motion.span
                   layoutId="active-tab-line"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--accent)]"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
                   transition={{ type: "spring", stiffness: 350, damping: 30 }}
                 />
               )}
@@ -59,7 +59,7 @@ export default function ResultsWorkspace({ result, downloading, onDownload }: Re
           type="button"
           onClick={onDownload}
           disabled={downloading}
-          className="font-mono text-xs px-3.5 py-1.5 rounded-lg border border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/5 transition-all hover:bg-[var(--accent)] hover:text-white active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
+          className="font-mono text-xs px-3.5 py-1.5 rounded-lg border border-accent text-accent bg-accent/5 transition-all hover:bg-accent hover:text-white active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1.5"
         >
           {downloading ? (
             <>
@@ -107,15 +107,15 @@ export default function ResultsWorkspace({ result, downloading, onDownload }: Re
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="border border-dashed border-[var(--amber)] p-5 rounded-xl flex gap-3 relative overflow-hidden bg-[var(--amber-soft)]/40"
+          className="border border-dashed border-amber p-5 rounded-xl flex gap-3 relative overflow-hidden bg-amber-soft/40"
         >
-          <Lightbulb size={20} weight="fill" className="flex-shrink-0 text-[var(--amber)] mt-0.5" />
+          <Lightbulb size={20} weight="fill" className="flex-shrink-0 text-amber mt-0.5" />
           <div>
-            <p className="overline text-[var(--amber)] mb-2.5">ATS Strategic Advisory Notes</p>
+            <p className="overline text-amber mb-2.5">ATS Strategic Advisory Notes</p>
             <ul className="text-sm space-y-2 leading-relaxed">
               {result.notes.map((n, i) => (
                 <li key={i} className="flex items-start gap-2">
-                  <CaretRight size={14} weight="bold" className="text-[var(--amber)] flex-shrink-0 mt-0.5" />
+                  <CaretRight size={14} weight="bold" className="text-amber flex-shrink-0 mt-0.5" />
                   <span>{n}</span>
                 </li>
               ))}

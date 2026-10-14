@@ -140,17 +140,17 @@ export default function DocumentCanvas({
 
   return (
     <div className="space-y-4">
-      {/* Sleek, Aligned Toolbar */}
-      <div className="p-2.5 sm:p-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Sleek, Non-Overflowing Toolbar */}
+      <div className="p-2 sm:p-2.5 rounded-xl border border-line bg-surface shadow-xs flex items-center justify-between gap-2 overflow-hidden">
         {/* Left: View Mode Toggle Tabs */}
-        <div className="flex p-0.5 rounded-lg bg-[var(--surface-2)] border border-[var(--line)] self-start sm:self-auto">
+        <div className="flex p-0.5 rounded-lg bg-surface-2 border border-line shrink-0">
           <button
             type="button"
             onClick={() => setViewMode("tailored")}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               viewMode === "tailored"
-                ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs font-semibold"
-                : "text-[var(--muted)] hover:text-[var(--ink)]"
+                ? "bg-surface text-ink shadow-xs font-semibold"
+                : "text-muted hover:text-ink"
             }`}
           >
             <FileText size={13} />
@@ -159,10 +159,10 @@ export default function DocumentCanvas({
           <button
             type="button"
             onClick={() => setViewMode("diff")}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               viewMode === "diff"
-                ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs font-semibold"
-                : "text-[var(--muted)] hover:text-[var(--ink)]"
+                ? "bg-surface text-ink shadow-xs font-semibold"
+                : "text-muted hover:text-ink"
             }`}
           >
             <GitCompare size={13} />
@@ -172,10 +172,10 @@ export default function DocumentCanvas({
             <button
               type="button"
               onClick={() => setViewMode("original")}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                 viewMode === "original"
-                  ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs font-semibold"
-                  : "text-[var(--muted)] hover:text-[var(--ink)]"
+                  ? "bg-surface text-ink shadow-xs font-semibold"
+                  : "text-muted hover:text-ink"
               }`}
             >
               <Eye size={13} />
@@ -184,49 +184,25 @@ export default function DocumentCanvas({
           )}
         </div>
 
-        {/* Right: Perfectly Aligned Action Buttons */}
-        <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap sm:flex-nowrap">
-          {/* 1-Page Constraint Toggle */}
-          <button
-            type="button"
-            onClick={toggleSinglePageMode}
-            title={isSinglePage ? "Resume is constrained to 1 page" : "Unconstrained layout"}
-            className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-              isSinglePage
-                ? "border-[var(--line-strong)] bg-[var(--surface-2)] text-[var(--ink)] font-semibold"
-                : "border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)]"
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${isSinglePage ? "bg-[var(--green)]" : "bg-[var(--muted)]"}`}
-            />
-            <span className="hidden md:inline">1-Page Mode:</span>
-            <span>{isSinglePage ? "1 Page" : "Multi"}</span>
-          </button>
-
-          {/* Autosaved Indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 text-xs text-[var(--muted)] font-mono px-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)]" />
-            <span>{saveStatus === "saved" ? "Saved" : "Saving…"}</span>
-          </div>
-
+        {/* Right: Clean, Flush Action Buttons (Never Overflows) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Copy Button */}
           <button
             type="button"
             onClick={handleCopyText}
-            className="px-3 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-2)] text-xs font-medium text-[var(--ink)] flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-surface-2 text-xs font-medium text-ink flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
           >
-            {copied ? <Check size={13} className="text-[var(--green)]" /> : <Copy size={13} />}
-            <span>{copied ? "Copied" : "Copy"}</span>
+            {copied ? <Check size={13} className="text-green" /> : <Copy size={13} />}
+            <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
           </button>
 
           {/* Download Dropdown Menu */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative shrink-0" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setDownloadMenuOpen(!downloadMenuOpen)}
               disabled={downloading}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-900 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-900 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 whitespace-nowrap"
             >
               <Download size={13} />
               <span>{downloading ? "Exporting…" : "Download"}</span>
@@ -234,17 +210,25 @@ export default function DocumentCanvas({
             </button>
 
             {downloadMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-52 rounded-xl border border-[var(--line)] bg-[var(--surface)] shadow-lg py-1.5 z-50 text-xs">
+              <div className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-line bg-surface shadow-xl py-1.5 z-50 text-xs">
+                <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted border-b border-line flex items-center justify-between">
+                  <span>Export Options</span>
+                  <span className="text-green font-medium">{isSinglePage ? "1-Page Active" : "Multi-Page"}</span>
+                </div>
+
                 <button
                   type="button"
                   onClick={handleDownloadPdf}
-                  className="w-full px-3 py-2 text-left hover:bg-[var(--surface-2)] text-[var(--ink)] flex items-center justify-between cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left hover:bg-surface-2 text-ink flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <FileDown size={14} className="text-[var(--accent)]" />
-                    <span className="font-medium">Download PDF</span>
+                    <FileDown size={14} className="text-accent" />
+                    <div>
+                      <p className="font-medium text-ink">Download PDF</p>
+                      <p className="text-[10px] text-muted">ATS vector format</p>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-mono text-[var(--green)] px-1.5 py-0.2 rounded bg-[var(--green-soft)]">
+                  <span className="text-[10px] font-mono text-green px-1.5 py-0.5 rounded bg-green-soft">
                     .pdf
                   </span>
                 </button>
@@ -255,23 +239,26 @@ export default function DocumentCanvas({
                     setDownloadMenuOpen(false);
                     onDownloadDocx();
                   }}
-                  className="w-full px-3 py-2 text-left hover:bg-[var(--surface-2)] text-[var(--ink)] flex items-center justify-between cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left hover:bg-surface-2 text-ink flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <Download size={14} className="text-[var(--ink)]" />
-                    <span className="font-medium">Download Word</span>
+                    <Download size={14} className="text-ink" />
+                    <div>
+                      <p className="font-medium text-ink">Download Word</p>
+                      <p className="text-[10px] text-muted">Editable DOCX format</p>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-mono text-[var(--muted)] px-1.5 py-0.2 rounded bg-[var(--surface-2)]">
+                  <span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded bg-surface-2">
                     .docx
                   </span>
                 </button>
 
-                <div className="my-1 border-t border-[var(--line)]" />
+                <div className="my-1 border-t border-line" />
 
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="w-full px-3 py-2 text-left hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--ink)] flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left hover:bg-surface-2 text-muted hover:text-ink flex items-center gap-2 cursor-pointer transition-colors"
                 >
                   <Printer size={14} />
                   <span>Print / Save as PDF</span>
@@ -285,7 +272,7 @@ export default function DocumentCanvas({
             type="button"
             onClick={onStartOver}
             title="Start over with another resume or job"
-            className="p-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--ink)] transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg border border-line bg-surface hover:bg-surface-2 text-muted hover:text-ink transition-colors cursor-pointer shrink-0"
           >
             <RotateCcw size={14} />
           </button>
@@ -293,14 +280,35 @@ export default function DocumentCanvas({
       </div>
 
       {/* Realistic Document Desk Canvas */}
-      <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-2)]/50 p-3 sm:p-6 lg:p-8 flex flex-col items-center overflow-x-auto">
+      <div className="rounded-2xl border border-line bg-surface-2/50 p-3 sm:p-6 lg:p-8 flex flex-col items-center overflow-x-auto">
         {/* Document Status Header Bar */}
-        <div className="w-full max-w-[800px] mb-3 flex items-center justify-between text-[11px] text-[var(--muted)] font-mono px-2">
+        <div className="w-full max-w-[800px] mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted font-mono px-1">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
-            <span>Document Preview (Print & Export Mode)</span>
+            <span className="w-2 h-2 rounded-full bg-accent" />
+            <span className="font-sans font-medium text-ink">Document Preview</span>
+            <span className="text-subtle">·</span>
+            <span className="text-[11px] text-muted flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green" />
+              <span>{saveStatus === "saved" ? "Autosaved" : "Saving…"}</span>
+            </span>
           </div>
-          <span>{isSinglePage ? "Single Page · 8.5 × 11 in" : "Multi Page · 8.5 × 11 in"}</span>
+
+          <div className="flex items-center gap-2">
+            {/* 1-Page Layout Toggle Pill */}
+            <button
+              type="button"
+              onClick={toggleSinglePageMode}
+              className={`px-2 py-0.5 rounded-md border text-[11px] font-sans font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                isSinglePage
+                  ? "border-green/40 bg-green-soft text-green"
+                  : "border-line bg-surface text-muted hover:text-ink"
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${isSinglePage ? "bg-green" : "bg-muted"}`} />
+              <span>1-Page Layout: {isSinglePage ? "ON" : "OFF"}</span>
+            </button>
+            <span className="text-[11px] text-subtle">8.5 × 11 in</span>
+          </div>
         </div>
 
         {/* The Authentic White Paper Sheet */}
@@ -501,12 +509,12 @@ export default function DocumentCanvas({
       </div>
 
       {/* Trust & Review Footnote */}
-      <div className="p-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] text-xs text-[var(--muted)] flex items-center justify-between">
+      <div className="p-3 rounded-xl border border-line bg-surface text-xs text-muted flex items-center justify-between">
         <span className="flex items-center gap-1.5">
-          <AlertCircle size={14} className="text-[var(--subtle)] flex-shrink-0" />
+          <AlertCircle size={14} className="text-subtle flex-shrink-0" />
           <span>All text in the document sheet is editable. Click any bullet point or summary to refine.</span>
         </span>
-        <span className="hidden sm:inline-flex font-mono text-[11px] text-[var(--subtle)]">
+        <span className="hidden sm:inline-flex font-mono text-[11px] text-subtle">
           ATS-Verified
         </span>
       </div>

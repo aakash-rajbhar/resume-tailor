@@ -38,14 +38,14 @@ export default function Step3Loading({ providerName = "AI Engine" }: Step3Loadin
     <div className="paper-card p-8 sm:p-12 space-y-10 w-full shadow-xs">
       {/* Top Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent-soft)] border border-[var(--accent)]/20 text-xs font-semibold text-[var(--accent)]">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft border border-accent/20 text-xs font-semibold text-accent">
           <Sparkles size={14} className="animate-spin" />
           <span>Tailoring in progress</span>
         </div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--ink)]">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-ink">
           Analyzing and optimizing your resume
         </h2>
-        <p className="text-xs sm:text-sm text-[var(--muted)] max-w-md mx-auto">
+        <p className="text-xs sm:text-sm text-muted max-w-md mx-auto">
           We&apos;re cross-referencing your experience with the job posting to generate an honest ATS gap analysis.
         </p>
       </div>
@@ -61,19 +61,19 @@ export default function Step3Loading({ providerName = "AI Engine" }: Step3Loadin
               key={s.id}
               className={`p-3.5 rounded-xl border transition-all flex items-center gap-3.5 ${
                 isDone
-                  ? "border-[var(--green-border)] bg-[var(--green-soft)]/20 text-[var(--ink)]"
+                  ? "border-green-border bg-green-soft/20 text-ink"
                   : isCurrent
-                    ? "border-[var(--line-strong)] bg-[var(--surface-2)]/80 text-[var(--ink)]"
-                    : "border-[var(--line)] bg-[var(--surface-2)]/30 text-[var(--muted)] opacity-60"
+                    ? "border-line-strong bg-surface-2/80 text-ink"
+                    : "border-line bg-surface-2/30 text-muted opacity-60"
               }`}
             >
               <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
                 {isDone ? (
-                  <CheckCircle2 size={18} className="text-[var(--green)]" />
+                  <CheckCircle2 size={18} className="text-green" />
                 ) : isCurrent ? (
-                  <div className="w-4 h-4 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+                  <div className="w-4 h-4 rounded-full border-2 border-accent border-t-transparent animate-spin" />
                 ) : (
-                  <div className="w-3.5 h-3.5 rounded-full border border-[var(--line-strong)] bg-[var(--surface)]" />
+                  <div className="w-3.5 h-3.5 rounded-full border border-line-strong bg-surface" />
                 )}
               </div>
               <span className="text-xs font-medium leading-tight">{s.label}</span>
@@ -83,31 +83,31 @@ export default function Step3Loading({ providerName = "AI Engine" }: Step3Loadin
       </div>
 
       {/* Skeleton preview of result layout */}
-      <div className="pt-6 border-t border-[var(--line)] space-y-4">
-        <p className="text-center font-mono text-[11px] text-[var(--muted)] uppercase tracking-wider">
+      <div className="pt-6 border-t border-line space-y-4">
+        <p className="text-center font-mono text-[11px] text-muted uppercase tracking-wider">
           Preparing workspace layout
         </p>
         <div className="grid sm:grid-cols-12 gap-4">
           {/* Left panel skeleton */}
-          <div className="sm:col-span-5 p-4 rounded-xl border border-[var(--line)] bg-[var(--surface-2)]/40 space-y-3 animate-shimmer">
-            <div className="h-4 w-24 bg-[var(--line)] rounded" />
-            <div className="h-16 w-full bg-[var(--line)]/60 rounded-lg" />
+          <div className="sm:col-span-5 p-4 rounded-xl border border-line bg-surface-2/40 space-y-3 animate-shimmer">
+            <div className="h-4 w-24 bg-line rounded" />
+            <div className="h-16 w-full bg-line/60 rounded-lg" />
             <div className="space-y-1.5 pt-2">
-              <div className="h-3 w-full bg-[var(--line)]/50 rounded" />
-              <div className="h-3 w-4/5 bg-[var(--line)]/50 rounded" />
-              <div className="h-3 w-3/5 bg-[var(--line)]/50 rounded" />
+              <div className="h-3 w-full bg-line/50 rounded" />
+              <div className="h-3 w-4/5 bg-line/50 rounded" />
+              <div className="h-3 w-3/5 bg-line/50 rounded" />
             </div>
           </div>
 
           {/* Right panel skeleton */}
-          <div className="sm:col-span-7 p-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] space-y-3 animate-shimmer">
-            <div className="h-6 w-1/3 bg-[var(--line)] rounded" />
-            <div className="h-3 w-1/2 bg-[var(--line)]/60 rounded" />
-            <div className="h-1 w-full bg-[var(--line)]/40 rounded mt-2" />
+          <div className="sm:col-span-7 p-4 rounded-xl border border-line bg-surface space-y-3 animate-shimmer">
+            <div className="h-6 w-1/3 bg-line rounded" />
+            <div className="h-3 w-1/2 bg-line/60 rounded" />
+            <div className="h-1 w-full bg-line/40 rounded mt-2" />
             <div className="space-y-2 pt-2">
-              <div className="h-3 w-full bg-[var(--line)]/40 rounded" />
-              <div className="h-3 w-full bg-[var(--line)]/40 rounded" />
-              <div className="h-3 w-2/3 bg-[var(--line)]/40 rounded" />
+              <div className="h-3 w-full bg-line/40 rounded" />
+              <div className="h-3 w-full bg-line/40 rounded" />
+              <div className="h-3 w-2/3 bg-line/40 rounded" />
             </div>
           </div>
         </div>

@@ -58,7 +58,7 @@ export default function DocumentPreview({ result }: { result: TailoredResume }) 
     <div className="flex flex-col gap-4">
       {/* Preset switcher */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="overline text-[var(--muted)] mr-1">Preset:</span>
+        <span className="overline text-muted mr-1">Preset:</span>
         {(Object.keys(THEMES) as ResumeTheme[]).map((t) => (
           <button
             key={t}
@@ -66,8 +66,8 @@ export default function DocumentPreview({ result }: { result: TailoredResume }) 
             onClick={() => setThemeKey(t)}
             className={`px-3 py-1 text-xs rounded-lg font-mono capitalize transition-all border ${
               themeKey === t
-                ? "bg-[var(--ink)] text-[var(--paper)] border-[var(--ink)] font-semibold shadow-sm"
-                : "border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--muted)]"
+                ? "bg-ink text-paper border-ink font-semibold shadow-sm"
+                : "border-line text-muted hover:text-ink hover:border-muted"
             }`}
           >
             {THEMES[t].label}
@@ -76,8 +76,8 @@ export default function DocumentPreview({ result }: { result: TailoredResume }) 
       </div>
 
       {/* The sheet */}
-      <div className="relative rounded-lg overflow-hidden bg-white border border-[var(--line)] shadow-xl hover:shadow-2xl transition-shadow duration-300">
-        <div className="h-2 w-full bg-[var(--ink)] opacity-5" />
+      <div className="relative rounded-lg overflow-hidden bg-white border border-line shadow-xl hover:shadow-2xl transition-shadow duration-300">
+        <div className="h-2 w-full bg-ink opacity-5" />
 
         <div className={`p-8 sm:p-12 leading-relaxed text-left text-slate-800 ${theme.font}`}>
           {/* Header */}

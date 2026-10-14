@@ -162,15 +162,15 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 340, damping: 34 }}
-            className="absolute right-0 top-0 h-full w-full max-w-md bg-[var(--surface)] border-l border-[var(--line)] shadow-xl flex flex-col"
+            className="absolute right-0 top-0 h-full w-full max-w-md bg-surface border-l border-line shadow-xl flex flex-col"
           >
             {/* Header */}
-            <div className="px-6 py-5 border-b border-[var(--line)] flex items-center justify-between gap-4">
+            <div className="px-6 py-5 border-b border-line flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-base font-semibold tracking-tight text-[var(--ink)]">
+                <h2 className="text-base font-semibold tracking-tight text-ink">
                   Engine & Studio Settings
                 </h2>
-                <p className="text-xs text-[var(--muted)] mt-0.5">
+                <p className="text-xs text-muted mt-0.5">
                   Configure your AI models, free API keys, and theme.
                 </p>
               </div>
@@ -178,7 +178,7 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                 type="button"
                 onClick={onClose}
                 aria-label="Close settings"
-                className="p-1.5 rounded-lg border border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg border border-line text-muted hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
               >
                 <X size={16} />
               </button>
@@ -187,10 +187,10 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* THEME PREFERENCE */}
               <section className="space-y-3">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
                   Appearance
                 </label>
-                <div className="grid grid-cols-3 p-1 rounded-lg bg-[var(--surface-2)] border border-[var(--line)] gap-1">
+                <div className="grid grid-cols-3 p-1 rounded-lg bg-surface-2 border border-line gap-1">
                   {(
                     [
                       { value: "light", label: "Light", icon: Sun },
@@ -204,8 +204,8 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                       onClick={() => setTheme(o.value)}
                       className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
                         settings.theme === o.value
-                          ? "bg-[var(--surface)] text-[var(--ink)] shadow-xs font-semibold"
-                          : "text-[var(--muted)] hover:text-[var(--ink)]"
+                          ? "bg-surface text-ink shadow-xs font-semibold"
+                          : "text-muted hover:text-ink"
                       }`}
                     >
                       <o.icon size={13} />
@@ -216,8 +216,8 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
               </section>
 
               {/* AI ENGINE SELECTOR */}
-              <section className="space-y-3 pt-3 border-t border-[var(--line)]">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+              <section className="space-y-3 pt-3 border-t border-line">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
                   Default AI Provider
                 </label>
 
@@ -232,17 +232,17 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                         onClick={() => setProvider(p)}
                         className={`rounded-xl border p-3.5 text-left transition-all cursor-pointer ${
                           active
-                            ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                            : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)]"
+                            ? "border-accent bg-accent-soft"
+                            : "border-line bg-surface hover:border-line-strong"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-[var(--ink)]">{meta.label}</span>
+                          <span className="text-xs font-semibold text-ink">{meta.label}</span>
                           {active && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                           )}
                         </div>
-                        <span className="text-[10px] font-mono text-[var(--muted)]">{meta.badge}</span>
+                        <span className="text-[10px] font-mono text-muted">{meta.badge}</span>
                       </button>
                     );
                   })}
@@ -268,13 +268,13 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                   return (
                     <div
                       key={p}
-                      className="p-4 rounded-xl border border-[var(--line)] bg-[var(--surface-2)]/30 space-y-4"
+                      className="p-4 rounded-xl border border-line bg-surface-2/30 space-y-4"
                     >
                       {/* Model Selector */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-medium text-[var(--ink)] flex items-center gap-1.5">
-                            <Cpu size={13} className="text-[var(--accent)]" />
+                          <label className="text-xs font-medium text-ink flex items-center gap-1.5">
+                            <Cpu size={13} className="text-accent" />
                             <span>Select Model</span>
                           </label>
                           <div className="flex items-center gap-2">
@@ -283,18 +283,18 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                                 type="button"
                                 onClick={handleFetchLiveModels}
                                 disabled={fetchingLiveModels}
-                                className="text-[11px] text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                className="text-[11px] text-accent hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
                               >
                                 <RefreshCw size={11} className={fetchingLiveModels ? "animate-spin" : ""} />
                                 <span>{fetchingLiveModels ? "Checking…" : "Discover Groq Models"}</span>
                               </button>
                             )}
-                            <span className="text-[10px] font-mono text-[var(--green)]">Free Tier</span>
+                            <span className="text-[10px] font-mono text-green">Free Tier</span>
                           </div>
                         </div>
 
                         {liveModelNotice && p === "groq" && (
-                          <div className="text-[11px] px-2.5 py-1.5 rounded-md bg-[var(--surface)] border border-[var(--line)] text-[var(--ink)]">
+                          <div className="text-[11px] px-2.5 py-1.5 rounded-md bg-surface border border-line text-ink">
                             {liveModelNotice}
                           </div>
                         )}
@@ -309,26 +309,26 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                                 onClick={() => setModel(p, m.id)}
                                 className={`w-full p-2.5 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between gap-2 ${
                                   isSelected
-                                    ? "border-[var(--accent)] bg-[var(--surface)] shadow-xs"
-                                    : "border-[var(--line)] bg-[var(--surface)] hover:border-[var(--line-strong)]"
+                                    ? "border-accent bg-surface shadow-xs"
+                                    : "border-line bg-surface hover:border-line-strong"
                                 }`}
                               >
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-xs font-medium text-[var(--ink)] truncate">{m.name}</span>
+                                    <span className="text-xs font-medium text-ink truncate">{m.name}</span>
                                     {m.badge && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-[var(--surface-2)] border border-[var(--line)] text-[var(--muted)]">
+                                      <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-surface-2 border border-line text-muted">
                                         {m.badge}
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-[10px] text-[var(--muted)] mt-0.5 line-clamp-1">{m.desc}</p>
+                                  <p className="text-[10px] text-muted mt-0.5 line-clamp-1">{m.desc}</p>
                                 </div>
                                 <div
                                   className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 ${
                                     isSelected
-                                      ? "border-[var(--accent)] bg-[var(--accent)]"
-                                      : "border-[var(--line-strong)]"
+                                      ? "border-accent bg-accent"
+                                      : "border-line-strong"
                                   }`}
                                 >
                                   {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
@@ -339,11 +339,11 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                         </div>
 
                         {/* Custom Model ID Override */}
-                        <div className="pt-1.5 border-t border-[var(--line)]/60">
-                          <div className="flex items-center justify-between text-[11px] text-[var(--muted)] mb-1">
+                        <div className="pt-1.5 border-t border-line/60">
+                          <div className="flex items-center justify-between text-[11px] text-muted mb-1">
                             <span>Or enter custom model ID:</span>
                             {isCustomModel && (
-                              <span className="text-[10px] text-[var(--accent)] font-mono font-medium">Custom active</span>
+                              <span className="text-[10px] text-accent font-mono font-medium">Custom active</span>
                             )}
                           </div>
                           <input
@@ -351,7 +351,7 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                             placeholder={p === "gemini" ? "e.g. gemini-3.8-flash" : "e.g. llama-3.3-70b-versatile"}
                             value={currentModel}
                             onChange={(e) => setModel(p, e.target.value.trim())}
-                            className="w-full px-3 py-1.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-xs font-mono placeholder:text-[var(--subtle)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                            className="w-full px-3 py-1.5 rounded-lg border border-line bg-surface text-xs font-mono placeholder:text-subtle focus:outline-none focus:border-accent transition-colors"
                           />
                         </div>
                       </div>
@@ -359,9 +359,9 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                       {/* API Key Input */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-medium text-[var(--ink)] flex items-center gap-1.5">
+                          <label className="text-xs font-medium text-ink flex items-center gap-1.5">
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${key ? "bg-[var(--green)]" : "bg-[var(--muted)]"}`}
+                              className={`w-1.5 h-1.5 rounded-full ${key ? "bg-green" : "bg-muted"}`}
                             />
                             <span>{meta.label} API Key</span>
                           </label>
@@ -376,13 +376,13 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                               placeholder={meta.placeholder}
                               autoComplete="off"
                               spellCheck={false}
-                              className="w-full pl-3 pr-8 py-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-xs font-mono placeholder:text-[var(--subtle)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+                              className="w-full pl-3 pr-8 py-2 rounded-lg border border-line bg-surface text-xs font-mono placeholder:text-subtle focus:outline-none focus:border-accent transition-colors"
                             />
                             <button
                               type="button"
                               onClick={() => setShowKeys((s) => ({ ...s, [p]: !s[p] }))}
                               aria-label={show ? "Hide key" : "Show key"}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink cursor-pointer"
                             >
                               {show ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>
@@ -392,19 +392,19 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                             type="button"
                             onClick={() => handleTest(p)}
                             disabled={isTesting}
-                            className="px-3 py-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-xs font-medium text-[var(--ink)] hover:bg-[var(--surface-2)] disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                            className="px-3 py-2 rounded-lg border border-line bg-surface text-xs font-medium text-ink hover:bg-surface-2 disabled:opacity-50 transition-colors flex items-center gap-1.5 cursor-pointer"
                           >
                             <Plug size={13} className={isTesting ? "animate-spin" : ""} />
                             <span>{isTesting ? "Testing" : "Test"}</span>
                           </button>
                         </div>
 
-                        <p className="text-[11px] text-[var(--muted)]">
+                        <p className="text-[11px] text-muted">
                           {meta.hint}
                           <Link
                             href={meta.link}
                             target="_blank"
-                            className="text-[var(--accent)] hover:underline inline-flex items-center gap-0.5 ml-0.5 font-medium"
+                            className="text-accent hover:underline inline-flex items-center gap-0.5 ml-0.5 font-medium"
                           >
                             Get key
                           </Link>
@@ -415,8 +415,8 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
                           <div
                             className={`p-2.5 rounded-lg border text-xs flex items-start gap-2 ${
                               testResult.ok
-                                ? "border-[var(--green-border)] bg-[var(--green-soft)] text-[var(--green)]"
-                                : "border-[var(--danger-border)] bg-[var(--danger-soft)] text-[var(--danger)]"
+                                ? "border-green-border bg-green-soft text-green"
+                                : "border-danger-border bg-danger-soft text-danger"
                             }`}
                           >
                             {testResult.ok ? (
@@ -434,23 +434,23 @@ export default function SettingsPanel({ open, onClose, settings, onChange }: Set
               </section>
 
               {/* PRIVACY & DATA NOTE */}
-              <section className="p-4 rounded-xl border border-[var(--line)] bg-[var(--surface-2)]/30 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]">
-                  <ShieldCheck size={16} className="text-[var(--green)]" />
+              <section className="p-4 rounded-xl border border-line bg-surface-2/30 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                  <ShieldCheck size={16} className="text-green" />
                   <span>Private by Design</span>
                 </div>
-                <p className="text-xs text-[var(--muted)] leading-relaxed">
-                  Your keys and resume text remain strictly in your browser&apos;s <code className="font-mono text-[11px] text-[var(--ink)]">localStorage</code>. Data is sent directly to your chosen AI provider without intermediary logging.
+                <p className="text-xs text-muted leading-relaxed">
+                  Your keys and resume text remain strictly in your browser&apos;s <code className="font-mono text-[11px] text-ink">localStorage</code>. Data is sent directly to your chosen AI provider without intermediary logging.
                 </p>
               </section>
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-[var(--line)] bg-[var(--surface)] flex justify-end">
+            <div className="p-4 border-t border-line bg-surface flex justify-end">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2 rounded-lg text-xs font-semibold bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                className="px-5 py-2 rounded-lg text-xs font-semibold bg-accent hover:bg-accent-hover text-white shadow-xs transition-all flex items-center gap-1 cursor-pointer"
               >
                 <span>Done</span>
                 <ChevronRight size={13} />

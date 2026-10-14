@@ -24,10 +24,10 @@ export default function HeaderBar({
   onHowItWorksClick,
 }: HeaderBarProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur-md transition-colors">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-[var(--surface)] border border-[var(--line)] flex items-center justify-center text-[var(--ink)] shadow-xs group-hover:border-[var(--muted)] transition-all">
+          <div className="w-8 h-8 rounded-lg bg-surface border border-line flex items-center justify-center text-ink shadow-xs group-hover:border-muted transition-all">
             <svg
               width="17"
               height="17"
@@ -45,10 +45,10 @@ export default function HeaderBar({
             </svg>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-sans text-[15px] sm:text-base font-semibold tracking-tight text-[var(--ink)]">
-              Resume<span className="text-[var(--muted)] font-normal">Tailor</span>
+            <span className="font-sans text-[15px] sm:text-base font-semibold tracking-tight text-ink">
+              Resume<span className="text-muted font-normal">Tailor</span>
             </span>
-            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-[var(--muted)] bg-[var(--surface-2)] border border-[var(--line)]">
+            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-muted bg-surface-2 border border-line">
               Studio
             </span>
           </div>
@@ -59,7 +59,7 @@ export default function HeaderBar({
             <button
               type="button"
               onClick={onHowItWorksClick}
-              className="hidden md:inline-block text-xs font-medium text-[var(--muted)] hover:text-[var(--ink)] transition-colors cursor-pointer mr-1"
+              className="hidden md:inline-block text-xs font-medium text-muted hover:text-ink transition-colors cursor-pointer mr-1"
             >
               How it works
             </button>
@@ -71,7 +71,7 @@ export default function HeaderBar({
             onClick={onOpenSettings}
             aria-label="Open settings"
             title="Open settings"
-            className="w-8 h-8 rounded-lg border border-[var(--line)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] transition-all flex items-center justify-center shadow-xs cursor-pointer"
+            className="w-8 h-8 rounded-lg border border-line bg-surface text-muted hover:text-ink hover:bg-surface-2 transition-all flex items-center justify-center shadow-xs cursor-pointer"
           >
             <Settings size={15} />
           </button>

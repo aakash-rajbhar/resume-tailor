@@ -4,6 +4,45 @@
   --font-serif: var(--font-serif);
   --font-mono: var(--font-mono);
   --font-sans: var(--font-sans);
+
+  /* Color tokens (bg-background, bg-line, text-ink, border-line, ...) */
+  --color-background: var(--bg);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+
+  /* Semantic tokens */
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-green-border: var(--green-border);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-amber-border: var(--amber-border);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-red-border: var(--red-border);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+  --color-warning: var(--warning);
+
+  /* Diff highlight tokens */
+  --color-diff-add-bg: var(--diff-add-bg);
+  --color-diff-add-text: var(--diff-add-text);
+  --color-diff-add-border: var(--diff-add-border);
+  --color-diff-remove-bg: var(--diff-remove-bg);
+  --color-diff-remove-text: var(--diff-remove-text);
+  --color-diff-remove-border: var(--diff-remove-border);
 }
 
 :root {
@@ -35,6 +74,10 @@
   --red-border: #FECACA;
   --blue: #2563EB;
   --blue-soft: #DBEAFE;
+  --danger: #DC2626;
+  --danger-soft: #FEE2E2;
+  --danger-border: #FECACA;
+  --warning: #D97706;
 
   /* Diff highlight tokens */
   --diff-add-bg: #DCFCE7;
@@ -76,6 +119,10 @@
   --red-border: rgba(239, 68, 68, 0.3);
   --blue: #3B82F6;
   --blue-soft: rgba(59, 130, 246, 0.15);
+  --danger: #EF4444;
+  --danger-soft: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(239, 68, 68, 0.3);
+  --warning: #F59E0B;
 
   /* Diff highlight tokens */
   --diff-add-bg: rgba(34, 197, 94, 0.2);
