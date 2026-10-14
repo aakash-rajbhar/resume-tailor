@@ -13,7 +13,11 @@ interface StepperProps {
 const STEPS = [
   { id: 1 as FlowStep, label: "Add Resume", description: "Upload or paste" },
   { id: 2 as FlowStep, label: "Target Job", description: "Paste requirements" },
-  { id: 3 as FlowStep, label: "Review & Tailor", description: "Analyze gaps & rewrite" },
+  {
+    id: 3 as FlowStep,
+    label: "Review & Tailor",
+    description: "Analyze gaps & rewrite",
+  },
 ];
 
 export default function Stepper({
@@ -55,7 +59,7 @@ export default function Stepper({
                 }`}
               >
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-mono font-semibold transition-colors flex-shrink-0 ${
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-mono font-semibold transition-colors shrink-0 ${
                     isCurrent
                       ? "bg-accent text-white"
                       : isCompleted

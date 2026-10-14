@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   UploadCloud,
   FileText,
@@ -8,7 +9,13 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
-import OrbitalSphereBackground from "@/components/ui/orbital-sphere";
+import Button from "@/components/ui/Button";
+
+// Decorative WebGL background: load after hydration so three.js never blocks first paint.
+const OrbitalSphereBackground = dynamic(
+  () => import("@/components/ui/orbital-sphere"),
+  { ssr: false, loading: () => null },
+);
 
 interface LandingHeroProps {
   onStart: () => void;
@@ -18,15 +25,21 @@ export default function LandingHero({ onStart }: LandingHeroProps) {
   return (
     <div className="space-y-12 py-4 sm:py-6">
       {/* Hero Header with Orbital Sphere in Background */}
-      <div className="relative rounded-3xl border border-line bg-surface/70 backdrop-blur-md overflow-hidden py-14 sm:py-20 px-6 sm:px-12 text-center shadow-xs">
-        {/* Orbital Sphere Background Layer */}
-        <OrbitalSphereBackground className="absolute inset-0 w-full h-full opacity-60 dark:opacity-80" />
-
-        {/* Soft radial overlay to ensure crystal clear text contrast */}
-        <div className="absolute inset-0 bg-linear-to-b from-transparent via-surface/40 to-surface/90 pointer-events-none" />
+      <div className="paper-card relative overflow-hidden py-16 sm:py-24 px-6 sm:px-12 text-center">
+        {/* Orbital Sphere Background Layer (authored ThreeUI renderer) */}
+        <OrbitalSphereBackground
+          className="absolute inset-0 w-full h-full"
+          speed={2.43}
+          particleSize={0.025}
+          particleOpacity={0.85}
+          orbitOpacity={0.35}
+          hue={0}
+          scale={1.2}
+          haloOpacity={0.25}
+        />
 
         <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-2/90 backdrop-blur-sm border border-line text-xs font-medium text-muted">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-2 border border-line text-xs font-medium text-muted">
             <Sparkles size={13} className="text-accent" />
             <span>Intelligent Career Assistant</span>
           </div>
@@ -42,14 +55,14 @@ export default function LandingHero({ onStart }: LandingHeroProps) {
           </p>
 
           <div className="pt-2 flex items-center justify-center gap-3">
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              size="lg"
               onClick={onStart}
-              className="px-6 py-3 rounded-xl text-sm font-semibold bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-neutral-200 dark:text-neutral-900 shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+              icon={<ArrowRight size={15} />}
             >
-              <span>Tailor my resume</span>
-              <ArrowRight size={15} />
-            </button>
+              Tailor my resume
+            </Button>
           </div>
         </div>
       </div>

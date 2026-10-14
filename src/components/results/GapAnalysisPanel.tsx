@@ -7,9 +7,9 @@ import {
   Lightbulb,
   ChevronDown,
   ChevronUp,
-  HelpCircle,
   TrendingUp,
 } from "lucide-react";
+import Badge from "@/components/ui/Badge";
 
 interface GapAnalysisPanelProps {
   beforeScore: number;
@@ -47,13 +47,13 @@ export default function GapAnalysisPanel({
             ATS Match Score
           </span>
           <span
-            className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold flex items-center gap-1 ${
+            className={`px-2 py-0.5 rounded-sm text-xs font-mono font-bold flex items-center gap-1 text-numeric ${
               delta >= 0
                 ? "bg-green-soft text-green"
                 : "bg-danger-soft text-danger"
             }`}
           >
-            <TrendingUp size={12} />
+            <TrendingUp size={12} aria-hidden />
             {delta >= 0 ? "+" : ""}
             {delta} pts
           </span>
@@ -62,10 +62,10 @@ export default function GapAnalysisPanel({
         {/* Linear progress comparison */}
         <div className="space-y-2">
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-bold tracking-tight text-ink">
+            <span className="text-2xl font-bold tracking-tight text-ink text-numeric">
               {afterScore}%
             </span>
-            <span className="text-xs text-muted font-mono">
+            <span className="text-xs text-muted font-mono text-numeric">
               Original: <span className="text-ink">{beforeScore}%</span>
             </span>
           </div>
@@ -101,23 +101,29 @@ export default function GapAnalysisPanel({
               Matched Keywords ({matchedKeywords.length})
             </span>
           </div>
-          {openSections.matched ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          {openSections.matched ? (
+            <ChevronUp size={15} />
+          ) : (
+            <ChevronDown size={15} />
+          )}
         </button>
 
         {openSections.matched && (
           <div className="px-4 pb-4 pt-1 border-t border-line">
             <div className="flex flex-wrap gap-1.5 pt-2">
-              {matchedKeywords.map((kw) => (
-                <span
-                  key={kw}
-                  className="px-2.5 py-1 rounded-md text-xs font-medium bg-green-soft text-green border border-green-border flex items-center gap-1.5"
+              {matchedKeywords.map((kw, idx) => (
+                <Badge
+                  key={`${kw}-${idx}`}
+                  variant="matched"
+                  icon={<CheckCircle2 size={12} aria-hidden />}
                 >
-                  <CheckCircle2 size={12} />
-                  <span>{kw}</span>
-                </span>
+                  {kw}
+                </Badge>
               ))}
               {matchedKeywords.length === 0 && (
-                <p className="text-xs text-muted italic py-1">No keywords matched.</p>
+                <p className="text-xs text-muted italic py-1">
+                  No keywords matched.
+                </p>
               )}
             </div>
           </div>
@@ -137,21 +143,27 @@ export default function GapAnalysisPanel({
               Missing Keywords ({missingKeywords.length})
             </span>
           </div>
-          {openSections.missing ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          {openSections.missing ? (
+            <ChevronUp size={15} />
+          ) : (
+            <ChevronDown size={15} />
+          )}
         </button>
 
         {openSections.missing && (
           <div className="px-4 pb-4 pt-1 border-t border-line">
             <div className="flex flex-wrap gap-1.5 pt-2">
-              {missingKeywords.map((kw) => (
-                <span
-                  key={kw}
-                  className="px-2.5 py-1 rounded-md text-xs font-medium bg-amber-soft text-amber border border-amber-border flex items-center gap-1.5"
+              {missingKeywords.map((kw, idx) => (
+                <Badge
+                  key={`${kw}-${idx}`}
+                  variant="missing"
                   title="Mentioned in job description but absent or weak in original resume"
                 >
-                  <AlertTriangle size={12} />
-                  <span>{kw}</span>
-                </span>
+                  <span className="flex items-center gap-1.5">
+                    <AlertTriangle size={12} aria-hidden />
+                    <span>{kw}</span>
+                  </span>
+                </Badge>
               ))}
               {missingKeywords.length === 0 && (
                 <div className="py-2 text-xs text-green flex items-center gap-1.5">
@@ -178,7 +190,11 @@ export default function GapAnalysisPanel({
                 Strategic Suggestions ({notes.length})
               </span>
             </div>
-            {openSections.suggestions ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            {openSections.suggestions ? (
+              <ChevronUp size={15} />
+            ) : (
+              <ChevronDown size={15} />
+            )}
           </button>
 
           {openSections.suggestions && (
@@ -188,7 +204,7 @@ export default function GapAnalysisPanel({
                   key={idx}
                   className="p-3 rounded-lg bg-surface-2/60 border border-line text-xs text-ink leading-relaxed flex items-start gap-2"
                 >
-                  <span className="font-mono text-[11px] font-bold text-muted flex-shrink-0 mt-0.5">
+                  <span className="font-mono text-[11px] font-bold text-muted shrink-0 mt-0.5">
                     {idx + 1}.
                   </span>
                   <span>{note}</span>

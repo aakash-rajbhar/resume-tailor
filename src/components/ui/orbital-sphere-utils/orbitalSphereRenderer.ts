@@ -1,260 +1,283 @@
 import * as THREE from "three";
 
+/**
+ * Orbital Sphere — vendored from @designcodeio/threeui@1.2.0
+ * (MIT, Structure Flow family). Geometry, motion and composition are ported
+ * source-exact. Host adaptations: three128 -> the project's installed three,
+ * and theme-aware blending/colors so the sphere reads on both the light and
+ * dark card surfaces used by this app (the authored AdditiveBlending is
+ * invisible over a light surface).
+ */
 export interface OrbitalSphereOptions {
-  hue: number;
   speed: number;
-  particleCount?: number;
-  particleSize?: number;
-  orbitCount?: number;
-  sphereRadius?: number;
-  primaryColor?: string;
-  secondaryColor?: string;
-  accentColor?: string;
+  particleSize: number;
+  particleOpacity: number;
+  orbitOpacity: number;
+  scale: number;
+  haloOpacity: number;
+  hue: number;
 }
 
 export const ORBITAL_SPHERE_DEFAULTS: OrbitalSphereOptions = {
-  hue: 0,
   speed: 1,
-  particleCount: 1800,
-  particleSize: 2,
-  orbitCount: 4,
-  sphereRadius: 160,
-  primaryColor: "#c084fc", // violet-400
-  secondaryColor: "#818cf8", // indigo-400
-  accentColor: "#f472b6", // pink-400
+  particleSize: 0.015,
+  particleOpacity: 0.8,
+  orbitOpacity: 0.25,
+  scale: 1,
+  haloOpacity: 0.2,
+  hue: 0,
 };
 
 export interface OrbitalSphereRenderer {
   resize: (width: number, height: number) => void;
   render: () => void;
+  setTheme: (dark: boolean) => void;
   dispose: () => void;
 }
 
+// Dark keeps the authored palette + additive glow; light uses a deeper violet
+// range with normal blending so the sphere stays vivid on a white card.
+const PALETTES = {
+  dark: {
+    pointA: 0xa78bfa, // #A78BFA
+    pointB: 0x701a75, // #701A75
+    line: 0x8b5cf6, // #8B5CF6
+    node: 0xd946ef, // #D946EF
+    halo: 0xc084fc, // #C084FC
+  },
+  light: {
+    pointA: 0x8b5cf6, // #8B5CF6
+    pointB: 0x6d28d9, // #6D28D9
+    line: 0x7c3aed, // #7C3AED
+    node: 0xd946ef, // #D946EF
+    halo: 0x8b5cf6, // #8B5CF6
+  },
+} as const;
+
 export function createOrbitalSphereRenderer(
   canvas: HTMLCanvasElement,
-  getOptions: () => OrbitalSphereOptions
+  getOptions: () => OrbitalSphereOptions,
 ): OrbitalSphereRenderer {
-  let width = canvas.clientWidth || 300;
-  let height = canvas.clientHeight || 300;
-
-  // 1. Scene & Camera
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000);
-  camera.position.z = 520;
-
-  // 2. Renderer
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({
     canvas,
     alpha: true,
     antialias: true,
-    powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, 2));
-  renderer.setSize(width, height, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   const group = new THREE.Group();
   scene.add(group);
 
-  // Initial options
-  const initialOpts = { ...ORBITAL_SPHERE_DEFAULTS, ...getOptions() };
+  const RADIUS = 2.2;
+  const MAX_PARTICLES = 15000;
+  const positions = new Float32Array(MAX_PARTICLES * 3);
+  const noises = new Float32Array(MAX_PARTICLES);
+  let count = 0;
 
-  // 3. Central Particle Synthesis Sphere (Fibonacci distribution)
-  const sphereGeo = new THREE.BufferGeometry();
-  const count = initialOpts.particleCount || 1800;
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-
-  const c1 = new THREE.Color(initialOpts.primaryColor || "#c084fc");
-  const c2 = new THREE.Color(initialOpts.secondaryColor || "#818cf8");
-  const cAccent = new THREE.Color(initialOpts.accentColor || "#f472b6");
-
-  const radius = initialOpts.sphereRadius || 160;
-
-  for (let i = 0; i < count; i++) {
-    // Fibonacci sphere points
-    const phi = Math.acos(1 - (2 * (i + 0.5)) / count);
-    const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-    const r = radius + (Math.random() - 0.5) * 12;
-
-    const x = r * Math.sin(phi) * Math.cos(theta);
-    const y = r * Math.sin(phi) * Math.sin(theta);
-    const z = r * Math.cos(phi);
-
-    positions[i * 3] = x;
-    positions[i * 3 + 1] = y;
-    positions[i * 3 + 2] = z;
-
-    // Gradient vertex colors
-    const lerpFactor = Math.random();
-    const col = lerpFactor > 0.85 ? cAccent : c1.clone().lerp(c2, lerpFactor);
-
-    colors[i * 3] = col.r;
-    colors[i * 3 + 1] = col.g;
-    colors[i * 3 + 2] = col.b;
+  for (let i = 0; i < MAX_PARTICLES; i += 1) {
+    // Fibonacci sphere + 3D noise displacement, culled below a threshold so the
+    // shell reads as a solid, lumpy planet rather than a sparse point shell.
+    const phi = Math.acos(-1 + (2 * i) / MAX_PARTICLES);
+    const theta = Math.sqrt(MAX_PARTICLES * Math.PI) * phi;
+    const x = RADIUS * Math.cos(theta) * Math.sin(phi);
+    const y = RADIUS * Math.sin(theta) * Math.sin(phi);
+    const z = RADIUS * Math.cos(phi);
+    const noise =
+      Math.sin(x * 3.5) * Math.cos(y * 3.5) * Math.sin(z * 3.5) +
+      Math.cos(x * 6) * 0.4;
+    if (noise <= -0.1) continue;
+    const bump = 1 + noise * 0.1;
+    positions[count * 3] = x * bump;
+    positions[count * 3 + 1] = y * bump;
+    positions[count * 3 + 2] = z * bump;
+    noises[count] = noise;
+    count += 1;
   }
 
-  sphereGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  sphereGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-
-  // Glowing particle texture
-  const particleCanvas = document.createElement("canvas");
-  particleCanvas.width = 32;
-  particleCanvas.height = 32;
-  const pCtx = particleCanvas.getContext("2d");
-  if (pCtx) {
-    const gradient = pCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
-    gradient.addColorStop(0.3, "rgba(230, 210, 255, 0.85)");
-    gradient.addColorStop(0.7, "rgba(168, 85, 247, 0.25)");
-    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
-    pCtx.fillStyle = gradient;
-    pCtx.fillRect(0, 0, 32, 32);
+  function buildColors(a: number, b: number): Float32Array {
+    const colorA = new THREE.Color(a);
+    const colorB = new THREE.Color(b);
+    const colors = new Float32Array(count * 3);
+    for (let i = 0; i < count; i += 1) {
+      const col = colorB.clone().lerp(colorA, noises[i] > 0.5 ? 1 : 0.3);
+      colors[i * 3] = col.r;
+      colors[i * 3 + 1] = col.g;
+      colors[i * 3 + 2] = col.b;
+    }
+    return colors;
   }
-  const particleTexture = new THREE.CanvasTexture(particleCanvas);
 
-  const sphereMat = new THREE.PointsMaterial({
-    size: initialOpts.particleSize || 2.4,
+  const colorAttrDark = new THREE.BufferAttribute(
+    buildColors(PALETTES.dark.pointA, PALETTES.dark.pointB),
+    3,
+  );
+  const colorAttrLight = new THREE.BufferAttribute(
+    buildColors(PALETTES.light.pointA, PALETTES.light.pointB),
+    3,
+  );
+
+  const sphereGeometry = new THREE.BufferGeometry();
+  sphereGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(positions.slice(0, count * 3), 3),
+  );
+  sphereGeometry.setAttribute("color", colorAttrDark);
+
+  const pointsMaterial = new THREE.PointsMaterial({
+    size: 0.015,
     vertexColors: true,
-    map: particleTexture,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.8,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
+  group.add(new THREE.Points(sphereGeometry, pointsMaterial));
 
-  const spherePoints = new THREE.Points(sphereGeo, sphereMat);
-  group.add(spherePoints);
+  // 6 orbital rings, each a Line with alternating direction, plus glowing nodes
+  // and halos on every other ring.
+  const lineMaterial = new THREE.LineBasicMaterial({
+    color: PALETTES.dark.line,
+    transparent: true,
+    opacity: 0.25,
+    blending: THREE.AdditiveBlending,
+  });
+  const lineGeometries: THREE.BufferGeometry[] = [];
+  const sphereGeometries: THREE.BufferGeometry[] = [];
+  const nodeMaterials: THREE.MeshBasicMaterial[] = [];
+  const haloMaterials: THREE.MeshBasicMaterial[] = [];
 
-  // 4. Encrypted Orbital Rings & Luminous Data Nodes
-  interface OrbitRing {
-    group: THREE.Group;
-    speed: number;
-    axis: "x" | "y" | "z";
+  let scaleFactor = 1;
+  for (let i = 0; i < 6; i += 1) {
+    const geometry = new THREE.BufferGeometry();
+    const pts: number[] = [];
+    const ringRadius = RADIUS * (1.08 + Math.random() * 0.2);
+    for (let s = 0; s <= 90; s += 1) {
+      const angle = (s / 90) * Math.PI * 2;
+      pts.push(
+        Math.cos(angle) * ringRadius,
+        Math.sin(angle) * ringRadius,
+        Math.sin(angle * 4) * 0.1,
+      );
+    }
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(pts, 3),
+    );
+    lineGeometries.push(geometry);
+    const line = new THREE.Line(geometry, lineMaterial);
+    line.rotation.x = Math.random() * Math.PI * 2;
+    line.rotation.y = Math.random() * Math.PI * 2;
+    group.add(line);
+
+    if (i % 2 !== 0) {
+      const nodeGeometry = new THREE.SphereGeometry(0.025, 16, 16);
+      const nodeMaterial = new THREE.MeshBasicMaterial({
+        color: PALETTES.dark.node,
+      });
+      const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+      const angle = Math.random() * Math.PI * 2;
+      node.position.set(
+        Math.cos(angle) * ringRadius,
+        Math.sin(angle) * ringRadius,
+        0,
+      );
+      line.add(node);
+
+      const haloGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+      const haloMaterial = new THREE.MeshBasicMaterial({
+        color: PALETTES.dark.halo,
+        transparent: true,
+        opacity: 0.2,
+        blending: THREE.AdditiveBlending,
+      });
+      const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+      node.add(halo);
+
+      sphereGeometries.push(nodeGeometry, haloGeometry);
+      nodeMaterials.push(nodeMaterial);
+      haloMaterials.push(haloMaterial);
+    }
   }
 
-  const orbitRings: OrbitRing[] = [];
-  const ringConfigs = [
-    { radius: radius * 1.35, tiltX: 0.45, tiltY: 0.25, points: 260, speed: 0.008, color: c1 },
-    { radius: radius * 1.6, tiltX: -0.6, tiltY: 0.8, points: 320, speed: -0.006, color: c2 },
-    { radius: radius * 1.9, tiltX: 0.85, tiltY: -0.3, points: 380, speed: 0.004, color: cAccent },
-  ];
+  function setTheme(isDark: boolean) {
+    const palette = isDark ? PALETTES.dark : PALETTES.light;
+    const blending = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
 
-  ringConfigs.forEach((cfg) => {
-    const ringGroup = new THREE.Group();
-    ringGroup.rotation.x = cfg.tiltX;
-    ringGroup.rotation.y = cfg.tiltY;
+    pointsMaterial.blending = blending;
+    pointsMaterial.needsUpdate = true;
+    sphereGeometry.setAttribute(
+      "color",
+      isDark ? colorAttrDark : colorAttrLight,
+    );
 
-    // Ring dots
-    const ringGeo = new THREE.BufferGeometry();
-    const ringPos = new Float32Array(cfg.points * 3);
-    const ringCols = new Float32Array(cfg.points * 3);
+    lineMaterial.color.setHex(palette.line);
+    lineMaterial.blending = blending;
+    lineMaterial.needsUpdate = true;
 
-    for (let i = 0; i < cfg.points; i++) {
-      const angle = (i / cfg.points) * Math.PI * 2;
-      ringPos[i * 3] = Math.cos(angle) * cfg.radius;
-      ringPos[i * 3 + 1] = Math.sin(angle) * cfg.radius;
-      ringPos[i * 3 + 2] = (Math.random() - 0.5) * 4;
-
-      // Encrypted dash pattern
-      const isBeacon = i % 24 === 0;
-      const alpha = isBeacon ? 1.0 : i % 3 === 0 ? 0.7 : 0.25;
-
-      ringCols[i * 3] = cfg.color.r * alpha;
-      ringCols[i * 3 + 1] = cfg.color.g * alpha;
-      ringCols[i * 3 + 2] = cfg.color.b * alpha;
-    }
-
-    ringGeo.setAttribute("position", new THREE.BufferAttribute(ringPos, 3));
-    ringGeo.setAttribute("color", new THREE.BufferAttribute(ringCols, 3));
-
-    const ringMat = new THREE.PointsMaterial({
-      size: 2.2,
-      vertexColors: true,
-      map: particleTexture,
-      transparent: true,
-      opacity: 0.85,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
+    nodeMaterials.forEach((material) => material.color.setHex(palette.node));
+    haloMaterials.forEach((material) => {
+      material.color.setHex(palette.halo);
+      material.blending = blending;
+      material.needsUpdate = true;
     });
+  }
 
-    const ringPoints = new THREE.Points(ringGeo, ringMat);
-    ringGroup.add(ringPoints);
-
-    // Add 2 glowing data nodes on each ring
-    const nodeGeo = new THREE.BufferGeometry();
-    const nodePos = new Float32Array(2 * 3);
-    for (let n = 0; n < 2; n++) {
-      const angle = n * Math.PI + Math.PI * 0.25;
-      nodePos[n * 3] = Math.cos(angle) * cfg.radius;
-      nodePos[n * 3 + 1] = Math.sin(angle) * cfg.radius;
-      nodePos[n * 3 + 2] = 0;
-    }
-    nodeGeo.setAttribute("position", new THREE.BufferAttribute(nodePos, 3));
-    const nodeMat = new THREE.PointsMaterial({
-      size: 6.5,
-      color: 0xffffff,
-      map: particleTexture,
-      transparent: true,
-      opacity: 0.95,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const nodes = new THREE.Points(nodeGeo, nodeMat);
-    ringGroup.add(nodes);
-
-    group.add(ringGroup);
-    orbitRings.push({ group: ringGroup, speed: cfg.speed, axis: "z" });
-  });
-
-  let time = 0;
+  setTheme(true);
 
   return {
-    resize(w: number, h: number) {
-      width = w;
-      height = h;
-      camera.aspect = w / h;
+    resize(width: number, height: number) {
+      camera.aspect = width / Math.max(1, height);
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h, false);
+      renderer.setSize(width, height, false);
+      const opts = getOptions();
+      if (width >= 1024) {
+        group.position.set(2.5, 0, -2);
+        scaleFactor = 1.15;
+        camera.position.z = 5.5;
+      } else {
+        // Host adaptation: source offsets the group downward (y = -1) for mobile
+        // composition; here it is centered vertically within the hero card.
+        group.position.set(0, 0, -3);
+        scaleFactor = 1;
+        camera.position.z = 6.5;
+      }
+      group.scale.setScalar(scaleFactor * opts.scale);
     },
 
     render() {
-      const currentOpts = getOptions();
-      const speed = currentOpts.speed ?? 1;
-
-      time += 0.01 * speed;
-
-      // Rotate central sphere
-      spherePoints.rotation.y += 0.002 * speed;
-      spherePoints.rotation.x = Math.sin(time * 0.4) * 0.12;
-
-      // Rotate orbital rings
-      orbitRings.forEach((ring) => {
-        ring.group.rotation.z += ring.speed * speed;
+      const opts = getOptions();
+      pointsMaterial.size = opts.particleSize;
+      pointsMaterial.opacity = opts.particleOpacity;
+      lineMaterial.opacity = opts.orbitOpacity;
+      haloMaterials.forEach((material) => {
+        material.opacity = opts.haloOpacity;
       });
+      group.scale.setScalar(scaleFactor * opts.scale);
 
-      // Subtle gentle tilt sway of entire group
-      group.rotation.y = Math.sin(time * 0.3) * 0.15;
-      group.rotation.x = Math.cos(time * 0.2) * 0.1;
+      group.rotation.y += 0.0008 * opts.speed;
+      group.rotation.x += 0.0003 * opts.speed;
+      group.children.forEach((child, index) => {
+        if (child.type === "Line") {
+          child.rotation.z +=
+            0.0004 * opts.speed * (index % 2 === 0 ? 1 : -1);
+        }
+      });
 
       renderer.render(scene, camera);
     },
 
+    setTheme,
+
     dispose() {
-      sphereGeo.dispose();
-      sphereMat.dispose();
-      particleTexture.dispose();
-      orbitRings.forEach((r) => {
-        r.group.traverse((child) => {
-          if (child instanceof THREE.Points) {
-            child.geometry.dispose();
-            if (Array.isArray(child.material)) {
-              child.material.forEach((m) => m.dispose());
-            } else {
-              child.material.dispose();
-            }
-          }
-        });
-      });
+      sphereGeometry.dispose();
+      pointsMaterial.dispose();
+      lineMaterial.dispose();
+      lineGeometries.forEach((geometry) => geometry.dispose());
+      sphereGeometries.forEach((geometry) => geometry.dispose());
+      nodeMaterials.forEach((material) => material.dispose());
+      haloMaterials.forEach((material) => material.dispose());
       renderer.dispose();
     },
   };

@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import Button from "@/components/ui/Button";
 
 interface Step2JobProps {
   jdText: string;
@@ -33,8 +34,16 @@ interface Step2JobProps {
 }
 
 const TONE_PRESETS = [
-  { id: "ats", label: "ATS-Optimized", desc: "Matches exact keywords & phrasing" },
-  { id: "impact", label: "Impact-Driven", desc: "Emphasizes metrics & accomplishments" },
+  {
+    id: "ats",
+    label: "ATS-Optimized",
+    desc: "Matches exact keywords & phrasing",
+  },
+  {
+    id: "impact",
+    label: "Impact-Driven",
+    desc: "Emphasizes metrics & accomplishments",
+  },
   { id: "concise", label: "Concise", desc: "Crisp, tight single-page wording" },
 ];
 
@@ -97,18 +106,23 @@ export default function Step2Job({
             Step 2: Add the job description
           </h2>
           <p className="text-xs text-muted mt-1">
-            Paste the requirements or job posting to calculate gaps and rewrite your resume.
+            Paste the requirements or job posting to calculate gaps and rewrite
+            your resume.
           </p>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="sm"
           onClick={handlePasteClipboard}
-          className="px-3 py-1.5 rounded-lg border border-line bg-surface-2/60 hover:bg-surface-2 text-xs font-medium text-ink flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer"
+          className="self-start sm:self-auto"
+          icon={
+            <ClipboardPaste size={14} className="text-accent" aria-hidden />
+          }
         >
-          <ClipboardPaste size={14} className="text-accent" />
-          <span>Paste from clipboard</span>
-        </button>
+          Paste from clipboard
+        </Button>
       </div>
 
       {/* Main Textarea */}
@@ -118,20 +132,29 @@ export default function Step2Job({
           onChange={(e) => onChangeJdText(e.target.value)}
           placeholder="Paste the full job description, role requirements, and responsibilities here…"
           rows={9}
+          maxLength={30000}
+          dir="auto"
+          aria-label="Job description"
           className="w-full p-4 rounded-xl border border-line bg-surface text-sm leading-relaxed resize-y min-h-[180px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all font-sans"
         />
 
-        <div className="flex items-center justify-between text-xs text-muted font-mono">
+        <div className="flex items-center justify-between text-xs text-muted font-mono text-numeric">
           <span>Min 30 characters</span>
           <span>
-            {chars} characters · {words} words
+            {chars} / 30,000 characters · {words} words
           </span>
         </div>
 
         {chars > 0 && chars < 30 && (
-          <p className="text-xs text-warning flex items-center gap-1.5 pt-1">
-            <AlertCircle size={13} />
-            <span>Job description looks too short for a reliable gap analysis. Add more requirements.</span>
+          <p
+            role="status"
+            className="text-xs text-warning flex items-center gap-1.5 pt-1"
+          >
+            <AlertCircle size={13} aria-hidden />
+            <span>
+              Job description looks too short for a reliable gap analysis. Add
+              more requirements.
+            </span>
           </p>
         )}
       </div>
@@ -143,12 +166,15 @@ export default function Step2Job({
             <Sparkles size={13} className="text-accent" />
             <span>Additional AI instructions (Optional)</span>
           </span>
-          <span className="text-[10px] text-muted font-mono">Custom instructions</span>
+          <span className="text-[10px] text-muted font-mono">
+            Custom instructions
+          </span>
         </label>
         <input
           type="text"
           value={additionalPrompt}
           onChange={(e) => onChangeAdditionalPrompt?.(e.target.value)}
+          maxLength={500}
           placeholder="e.g. Highlight cloud architecture & leadership, keep bullet wording crisp, prioritize Python experience..."
           className="w-full px-3.5 py-2.5 rounded-xl border border-line bg-surface text-xs text-ink placeholder:text-subtle focus:outline-none focus:border-accent transition-all font-sans"
         />
@@ -158,21 +184,28 @@ export default function Step2Job({
       <div className="p-3.5 rounded-xl border border-line bg-surface-2/30 flex items-center justify-between gap-4">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-ink">Limit resume to a single page</span>
+            <span
+              id="single-page-label"
+              className="text-xs font-semibold text-ink"
+            >
+              Limit resume to a single page
+            </span>
             <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-green-soft text-green border border-green-border font-medium">
               Recommended
             </span>
           </div>
           <p className="text-[11px] text-muted leading-relaxed">
-            Automatically tightens word count, bullet lengths, and document spacing so your resume strictly fits on 1 page when exported.
+            Automatically tightens word count, bullet lengths, and document
+            spacing so your resume strictly fits on 1 page when exported.
           </p>
         </div>
         <button
           type="button"
           role="switch"
           aria-checked={singlePage}
+          aria-labelledby="single-page-label"
           onClick={() => onChangeSinglePage?.(!singlePage)}
-          className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer flex-shrink-0 ${
+          className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
             singlePage ? "bg-accent" : "bg-line-strong"
           }`}
         >
@@ -212,7 +245,10 @@ export default function Step2Job({
                   placeholder="e.g. Senior Software Engineer"
                   className="w-full pl-8 pr-3 py-2 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent transition-colors"
                 />
-                <Briefcase size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                <Briefcase
+                  size={13}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
+                />
               </div>
             </div>
 
@@ -228,7 +264,10 @@ export default function Step2Job({
                   placeholder="e.g. Acme Corp"
                   className="w-full pl-8 pr-3 py-2 rounded-lg border border-line bg-surface text-xs text-ink focus:outline-none focus:border-accent transition-colors"
                 />
-                <Building2 size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                <Building2
+                  size={13}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
+                />
               </div>
             </div>
           </div>
@@ -246,7 +285,11 @@ export default function Step2Job({
             <Sliders size={14} />
             <span>Tailoring style preferences</span>
           </span>
-          {showPreferences ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {showPreferences ? (
+            <ChevronUp size={14} />
+          ) : (
+            <ChevronDown size={14} />
+          )}
         </button>
 
         {showPreferences && (
@@ -267,7 +310,9 @@ export default function Step2Job({
                   }`}
                 >
                   <p className="text-xs font-semibold text-ink">{t.label}</p>
-                  <p className="text-[11px] text-muted mt-0.5 leading-tight">{t.desc}</p>
+                  <p className="text-[11px] text-muted mt-0.5 leading-tight">
+                    {t.desc}
+                  </p>
                 </button>
               ))}
             </div>
@@ -277,28 +322,32 @@ export default function Step2Job({
 
       {/* Actions */}
       <div className="pt-4 border-t border-line flex items-center justify-between">
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={onBack}
-          className="px-4 py-2.5 rounded-lg border border-line bg-surface hover:bg-surface-2 text-xs font-medium text-ink transition-colors flex items-center gap-1.5 cursor-pointer"
+          icon={<ArrowLeft size={14} aria-hidden />}
         >
-          <ArrowLeft size={14} />
-          <span>Back</span>
-        </button>
+          Back
+        </Button>
 
         <div className="flex items-center gap-3">
           <span className="hidden md:inline-flex text-[11px] font-mono text-muted">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-line text-[10px]">⌘ Enter</kbd> to tailor
+            Press{" "}
+            <kbd className="px-1.5 py-0.5 rounded-sm bg-surface-2 border border-line text-[10px]">
+              ⌘ Enter
+            </kbd>{" "}
+            to tailor
           </span>
-          <button
+          <Button
             type="button"
             disabled={!isValid}
+            loading={loading}
             onClick={onSubmit}
-            className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-accent hover:bg-accent-hover text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            icon={<Sparkles size={15} aria-hidden />}
           >
-            <Sparkles size={15} />
-            <span>Analyze & tailor</span>
-          </button>
+            Analyze & tailor
+          </Button>
         </div>
       </div>
     </div>

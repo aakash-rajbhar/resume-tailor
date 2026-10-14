@@ -9,12 +9,26 @@ interface Step3LoadingProps {
 
 const STAGES = [
   { id: 1, label: "Reading resume structure & credentials", duration: 1200 },
-  { id: 2, label: "Analyzing job description & core requirements", duration: 2500 },
-  { id: 3, label: "Evaluating keyword match and identifying gaps", duration: 3800 },
-  { id: 4, label: "Synthesizing ATS-aligned single-page rewrite", duration: 5200 },
+  {
+    id: 2,
+    label: "Analyzing job description & core requirements",
+    duration: 2500,
+  },
+  {
+    id: 3,
+    label: "Evaluating keyword match and identifying gaps",
+    duration: 3800,
+  },
+  {
+    id: 4,
+    label: "Synthesizing ATS-aligned single-page rewrite",
+    duration: 5200,
+  },
 ];
 
-export default function Step3Loading({ providerName = "AI Engine" }: Step3LoadingProps) {
+export default function Step3Loading({
+  providerName = "AI Engine",
+}: Step3LoadingProps) {
   const [completedStages, setCompletedStages] = useState<number[]>([]);
   const [currentStageId, setCurrentStageId] = useState(1);
 
@@ -46,7 +60,8 @@ export default function Step3Loading({ providerName = "AI Engine" }: Step3Loadin
           Analyzing and optimizing your resume
         </h2>
         <p className="text-xs sm:text-sm text-muted max-w-md mx-auto">
-          We&apos;re cross-referencing your experience with the job posting to generate an honest ATS gap analysis.
+          {providerName} is cross-referencing your experience with the job
+          posting to generate an honest ATS gap analysis.
         </p>
       </div>
 
@@ -67,7 +82,7 @@ export default function Step3Loading({ providerName = "AI Engine" }: Step3Loadin
                     : "border-line bg-surface-2/30 text-muted opacity-60"
               }`}
             >
-              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+              <div className="w-5 h-5 flex items-center justify-center shrink-0">
                 {isDone ? (
                   <CheckCircle2 size={18} className="text-green" />
                 ) : isCurrent ? (
@@ -76,7 +91,9 @@ export default function Step3Loading({ providerName = "AI Engine" }: Step3Loadin
                   <div className="w-3.5 h-3.5 rounded-full border border-line-strong bg-surface" />
                 )}
               </div>
-              <span className="text-xs font-medium leading-tight">{s.label}</span>
+              <span className="text-xs font-medium leading-tight">
+                {s.label}
+              </span>
             </div>
           );
         })}

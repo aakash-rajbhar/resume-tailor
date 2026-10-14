@@ -13,11 +13,9 @@ import {
   ChevronDown,
   Printer,
   FileDown,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { TailoredResume } from "@/lib/types";
-import { generateResumePdf } from "@/lib/pdfBuilder";
 
 interface DocumentCanvasProps {
   tailored: TailoredResume;
@@ -55,7 +53,10 @@ export default function DocumentCanvas({
   // Close download dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDownloadMenuOpen(false);
       }
     }
@@ -64,42 +65,75 @@ export default function DocumentCanvas({
   }, []);
 
   const handleCopyText = async () => {
-    try {
-      const formatted = [
-        resumeData.name,
-        resumeData.contact,
-        resumeData.title,
-        "\nSUMMARY\n" + resumeData.summary,
-        "\nSKILLS\n" + resumeData.skills.map((s) => `${s.label}: ${s.value}`).join("\n"),
-        "\nEXPERIENCE\n" +
-          resumeData.experience
-            .map(
-              (e) =>
-                `${e.title} - ${e.company} (${e.dates})\n` +
-                e.bullets.map((b) => `• ${b}`).join("\n")
-            )
-            .join("\n\n"),
-        "\nEDUCATION\n" +
-          resumeData.education.map((ed) => `${ed.degree}, ${ed.school} (${ed.dates})`).join("\n"),
-      ].join("\n");
+    const formatted = [
+      resumeData.name,
+      resumeData.contact,
+      resumeData.title,
+      "\nSUMMARY\n" + resumeData.summary,
+      "\nSKILLS\n" +
+        resumeData.skills.map((s) => `${s.label}: ${s.value}`).join("\n"),
+      "\nEXPERIENCE\n" +
+        resumeData.experience
+          .map(
+            (e) =>
+              `${e.title} - ${e.company} (${e.dates})\n` +
+              e.bullets.map((b) => `• ${b}`).join("\n"),
+          )
+          .join("\n\n"),
+      "\nEDUCATION\n" +
+        resumeData.education
+          .map((ed) => `${ed.degree}, ${ed.school} (${ed.dates})`)
+          .join("\n"),
+    ].join("\n");
 
-      await navigator.clipboard.writeText(formatted);
+    const onSuccess = () => {
       setCopied(true);
       toast.success("Resume text copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
+    };
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(formatted);
+        onSuccess();
+        return;
+      }
+      throw new Error("Clipboard API unavailable");
     } catch {
-      toast.error("Failed to copy text");
+      // Fallback for blocked Clipboard API / non-secure contexts.
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = formatted;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        if (!ok) throw new Error("execCommand copy failed");
+        onSuccess();
+      } catch {
+        toast.error("Couldn't copy automatically", {
+          description:
+            "Select the text in the document preview and copy it manually.",
+        });
+      }
     }
   };
 
-  const handleDownloadPdf = () => {
+  const handleDownloadPdf = async () => {
     try {
+      // jsPDF is heavy — load it only when the user requests an export.
+      const { generateResumePdf } = await import("@/lib/pdfBuilder");
       const doc = generateResumePdf(resumeData, { singlePage: isSinglePage });
       const filename = `${(resumeData.name || "Resume").replace(/\s+/g, "_")}_Tailored.pdf`;
       doc.save(filename);
       setDownloadMenuOpen(false);
       toast.success("PDF exported successfully", {
-        description: isSinglePage ? "Formatted for strict 1-page layout" : "Multi-page layout exported",
+        description: isSinglePage
+          ? "Formatted for strict 1-page layout"
+          : "Multi-page layout exported",
       });
     } catch (err) {
       toast.error("Failed to generate PDF", {
@@ -121,11 +155,25 @@ export default function DocumentCanvas({
     setTimeout(() => setSaveStatus("saved"), 400);
   };
 
-  const handleBulletChange = (expIdx: number, bulletIdx: number, newBullet: string) => {
+  const handleBulletChange = (
+    expIdx: number,
+    bulletIdx: number,
+    newBullet: string,
+  ) => {
     setSaveStatus("editing");
-    const updatedExperience = [...resumeData.experience];
-    updatedExperience[expIdx].bullets[bulletIdx] = newBullet;
-    const updated = { ...resumeData, experience: updatedExperience };
+    const updated = {
+      ...resumeData,
+      experience: resumeData.experience.map((exp, i) =>
+        i === expIdx
+          ? {
+              ...exp,
+              bullets: exp.bullets.map((b, j) =>
+                j === bulletIdx ? newBullet : b,
+              ),
+            }
+          : exp,
+      ),
+    };
     setResumeData(updated);
     onUpdateResume?.(updated);
     setTimeout(() => setSaveStatus("saved"), 400);
@@ -135,15 +183,19 @@ export default function DocumentCanvas({
     const next = !isSinglePage;
     setIsSinglePage(next);
     onToggleSinglePage?.(next);
-    toast.info(next ? "Single-page constraint enabled" : "Standard multi-page view enabled");
+    toast.info(
+      next
+        ? "Single-page constraint enabled"
+        : "Standard multi-page view enabled",
+    );
   };
 
   return (
     <div className="space-y-4">
-      {/* Sleek, Non-Overflowing Toolbar */}
-      <div className="p-2 sm:p-2.5 rounded-xl border border-line bg-surface shadow-xs flex items-center justify-between gap-2 overflow-hidden">
+      {/* Toolbar — wraps instead of clipping so every control stays reachable on narrow screens */}
+      <div className="p-2 sm:p-2.5 rounded-lg border border-line bg-surface flex flex-wrap items-center justify-between gap-2">
         {/* Left: View Mode Toggle Tabs */}
-        <div className="flex p-0.5 rounded-lg bg-surface-2 border border-line shrink-0">
+        <div className="flex p-0.5 rounded-lg bg-surface-2 border border-line max-w-full overflow-x-auto thin-scrollbar">
           <button
             type="button"
             onClick={() => setViewMode("tailored")}
@@ -166,7 +218,7 @@ export default function DocumentCanvas({
             }`}
           >
             <GitCompare size={13} />
-            <span>Changes (Diff)</span>
+            <span>Diff</span>
           </button>
           {originalText && (
             <button
@@ -192,8 +244,14 @@ export default function DocumentCanvas({
             onClick={handleCopyText}
             className="px-2.5 sm:px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-surface-2 text-xs font-medium text-ink flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
           >
-            {copied ? <Check size={13} className="text-green" /> : <Copy size={13} />}
-            <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
+            {copied ? (
+              <Check size={13} className="text-green" />
+            ) : (
+              <Copy size={13} />
+            )}
+            <span className="hidden sm:inline">
+              {copied ? "Copied" : "Copy"}
+            </span>
           </button>
 
           {/* Download Dropdown Menu */}
@@ -210,10 +268,12 @@ export default function DocumentCanvas({
             </button>
 
             {downloadMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-line bg-surface shadow-xl py-1.5 z-50 text-xs">
+              <div className="absolute right-0 top-full mt-1.5 w-56 rounded-lg border border-line bg-surface shadow-float py-1.5 z-dropdown text-xs">
                 <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted border-b border-line flex items-center justify-between">
                   <span>Export Options</span>
-                  <span className="text-green font-medium">{isSinglePage ? "1-Page Active" : "Multi-Page"}</span>
+                  <span className="text-green font-medium">
+                    {isSinglePage ? "1-Page Active" : "Multi-Page"}
+                  </span>
                 </div>
 
                 <button
@@ -225,7 +285,9 @@ export default function DocumentCanvas({
                     <FileDown size={14} className="text-accent" />
                     <div>
                       <p className="font-medium text-ink">Download PDF</p>
-                      <p className="text-[10px] text-muted">ATS vector format</p>
+                      <p className="text-[10px] text-muted">
+                        ATS vector format
+                      </p>
                     </div>
                   </div>
                   <span className="text-[10px] font-mono text-green px-1.5 py-0.5 rounded bg-green-soft">
@@ -245,7 +307,9 @@ export default function DocumentCanvas({
                     <Download size={14} className="text-ink" />
                     <div>
                       <p className="font-medium text-ink">Download Word</p>
-                      <p className="text-[10px] text-muted">Editable DOCX format</p>
+                      <p className="text-[10px] text-muted">
+                        Editable DOCX format
+                      </p>
                     </div>
                   </div>
                   <span className="text-[10px] font-mono text-muted px-1.5 py-0.5 rounded bg-surface-2">
@@ -285,7 +349,9 @@ export default function DocumentCanvas({
         <div className="w-full max-w-[800px] mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted font-mono px-1">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-accent" />
-            <span className="font-sans font-medium text-ink">Document Preview</span>
+            <span className="font-sans font-medium text-ink">
+              Document Preview
+            </span>
             <span className="text-subtle">·</span>
             <span className="text-[11px] text-muted flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-green" />
@@ -304,7 +370,9 @@ export default function DocumentCanvas({
                   : "border-line bg-surface text-muted hover:text-ink"
               }`}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${isSinglePage ? "bg-green" : "bg-muted"}`} />
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${isSinglePage ? "bg-green" : "bg-muted"}`}
+              />
               <span>1-Page Layout: {isSinglePage ? "ON" : "OFF"}</span>
             </button>
             <span className="text-[11px] text-subtle">8.5 × 11 in</span>
@@ -314,7 +382,7 @@ export default function DocumentCanvas({
         {/* The Authentic White Paper Sheet */}
         <div
           id="resume-paper-document"
-          className="w-full max-w-[800px] !bg-white !text-neutral-900 border border-neutral-300 dark:border-neutral-700/80 rounded-xs shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.65)] p-8 sm:p-14 space-y-6 font-sans leading-relaxed text-left select-text print:p-0 print:border-none print:shadow-none"
+          className="w-full max-w-[800px] bg-white text-neutral-900 border border-neutral-300 dark:border-neutral-700/80 rounded-xs shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.65)] p-8 sm:p-14 space-y-6 font-sans leading-relaxed text-left select-text print:p-0 print:border-none print:shadow-none"
         >
           {/* Candidate Header */}
           <div className="text-center pb-5 border-b border-neutral-200">
@@ -323,8 +391,11 @@ export default function DocumentCanvas({
             </h1>
             <p className="text-xs !text-neutral-600 font-mono mt-1.5 flex flex-wrap justify-center gap-2">
               {resumeData.contact.split(" | ").map((chunk, i, arr) => (
-                <span key={chunk} className="inline-flex items-center gap-2">
-                  <span>{chunk}</span>
+                <span
+                  key={`${chunk}-${i}`}
+                  className="inline-flex items-center gap-2 max-w-full"
+                >
+                  <span className="break-all">{chunk}</span>
                   {i < arr.length - 1 && <span className="opacity-30">|</span>}
                 </span>
               ))}
@@ -356,7 +427,9 @@ export default function DocumentCanvas({
                   </h2>
                   {viewMode === "diff" ? (
                     <div className="text-xs leading-relaxed !text-emerald-950 p-2.5 rounded !bg-emerald-50 border border-emerald-300">
-                      <span className="font-mono text-[10px] font-bold uppercase mr-1 text-emerald-800">[Tailored]</span>
+                      <span className="font-mono text-[10px] font-bold uppercase mr-1 text-emerald-800">
+                        [Tailored]
+                      </span>
                       {resumeData.summary}
                     </div>
                   ) : (
@@ -377,10 +450,17 @@ export default function DocumentCanvas({
                     Technical Skills & Competencies
                   </h2>
                   <div className="grid gap-1 text-xs">
-                    {resumeData.skills.map((skill) => (
-                      <div key={skill.label} className="grid grid-cols-[130px_1fr] gap-3">
-                        <span className="font-mono font-bold !text-neutral-800">{skill.label}:</span>
-                        <span className="!text-neutral-800">{skill.value}</span>
+                    {resumeData.skills.map((skill, idx) => (
+                      <div
+                        key={`${skill.label}-${idx}`}
+                        className="grid grid-cols-[130px_1fr] gap-3"
+                      >
+                        <span className="font-mono font-bold !text-neutral-800">
+                          {skill.label}:
+                        </span>
+                        <span className="!text-neutral-800 break-words min-w-0">
+                          {skill.value}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -395,13 +475,20 @@ export default function DocumentCanvas({
                   </h2>
                   <div className="space-y-4">
                     {resumeData.experience.map((exp, expIdx) => {
-                      const bullets = isSinglePage ? exp.bullets.slice(0, 4) : exp.bullets;
+                      const bullets = isSinglePage
+                        ? exp.bullets.slice(0, 4)
+                        : exp.bullets;
                       return (
                         <div key={expIdx} className="space-y-1">
                           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
                             <div className="text-xs font-bold !text-neutral-950">
-                              {exp.title} <span className="font-normal text-neutral-400">—</span>{" "}
-                              <span className="font-semibold !text-neutral-800">{exp.company}</span>
+                              {exp.title}{" "}
+                              <span className="font-normal text-neutral-400">
+                                —
+                              </span>{" "}
+                              <span className="font-semibold !text-neutral-800">
+                                {exp.company}
+                              </span>
                             </div>
                             <div className="text-[11px] font-mono !text-neutral-600">
                               {exp.location} | {exp.dates}
@@ -413,7 +500,9 @@ export default function DocumentCanvas({
                               <li key={bulletIdx}>
                                 {viewMode === "diff" ? (
                                   <span className="inline-block p-1 rounded !bg-emerald-50 !text-emerald-950 border border-emerald-300">
-                                    <span className="font-mono text-[9px] font-bold mr-1 text-emerald-800">[AI Aligned]</span>
+                                    <span className="font-mono text-[9px] font-bold mr-1 text-emerald-800">
+                                      [AI Aligned]
+                                    </span>
                                     {bullet}
                                   </span>
                                 ) : (
@@ -421,7 +510,11 @@ export default function DocumentCanvas({
                                     type="text"
                                     value={bullet}
                                     onChange={(e) =>
-                                      handleBulletChange(expIdx, bulletIdx, e.target.value)
+                                      handleBulletChange(
+                                        expIdx,
+                                        bulletIdx,
+                                        e.target.value,
+                                      )
                                     }
                                     className="w-full px-1.5 py-0.5 -mx-1.5 rounded hover:!bg-neutral-100/70 focus:!bg-white focus:outline-none focus:ring-1 focus:ring-neutral-400 text-xs !text-neutral-800 transition-colors font-sans"
                                   />
@@ -444,11 +537,15 @@ export default function DocumentCanvas({
                   </h2>
                   <div className="space-y-2.5">
                     {resumeData.projects.map((proj, pIdx) => {
-                      const pBullets = isSinglePage ? proj.bullets.slice(0, 2) : proj.bullets;
+                      const pBullets = isSinglePage
+                        ? proj.bullets.slice(0, 2)
+                        : proj.bullets;
                       return (
                         <div key={pIdx} className="space-y-0.5">
                           <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-xs font-bold !text-neutral-950">{proj.name}</span>
+                            <span className="text-xs font-bold !text-neutral-950">
+                              {proj.name}
+                            </span>
                             <span className="text-[10px] font-mono px-2 py-0.5 rounded !bg-neutral-100 !text-neutral-700 border border-neutral-200">
                               {proj.tools}
                             </span>
@@ -473,12 +570,21 @@ export default function DocumentCanvas({
                   </h2>
                   <div className="space-y-1.5">
                     {resumeData.education.map((edu, eIdx) => (
-                      <div key={eIdx} className="flex items-baseline justify-between text-xs">
+                      <div
+                        key={eIdx}
+                        className="flex items-baseline justify-between text-xs"
+                      >
                         <div>
-                          <span className="font-bold !text-neutral-950">{edu.school}</span>
-                          <span className="!text-neutral-700 ml-2">{edu.degree}</span>
+                          <span className="font-bold !text-neutral-950">
+                            {edu.school}
+                          </span>
+                          <span className="!text-neutral-700 ml-2">
+                            {edu.degree}
+                          </span>
                         </div>
-                        <span className="font-mono text-[11px] !text-neutral-600">{edu.dates}</span>
+                        <span className="font-mono text-[11px] !text-neutral-600">
+                          {edu.dates}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -486,23 +592,24 @@ export default function DocumentCanvas({
               )}
 
               {/* Certifications */}
-              {resumeData.certifications && resumeData.certifications.length > 0 && (
-                <section className="space-y-1.5">
-                  <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
-                    Certifications
-                  </h2>
-                  <div className="flex flex-wrap gap-1.5 text-xs font-mono !text-neutral-800">
-                    {resumeData.certifications.map((cert) => (
-                      <span
-                        key={cert}
-                        className="px-2 py-0.5 rounded !bg-neutral-100 !text-neutral-800 border border-neutral-200"
-                      >
-                        {cert}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
+              {resumeData.certifications &&
+                resumeData.certifications.length > 0 && (
+                  <section className="space-y-1.5">
+                    <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
+                      Certifications
+                    </h2>
+                    <div className="flex flex-wrap gap-1.5 text-xs font-mono !text-neutral-800">
+                      {resumeData.certifications.map((cert, idx) => (
+                        <span
+                          key={`${cert}-${idx}`}
+                          className="px-2 py-0.5 rounded !bg-neutral-100 !text-neutral-800 border border-neutral-200 break-words"
+                        >
+                          {cert}
+                        </span>
+                      ))}
+                    </div>
+                  </section>
+                )}
             </>
           )}
         </div>
@@ -511,8 +618,11 @@ export default function DocumentCanvas({
       {/* Trust & Review Footnote */}
       <div className="p-3 rounded-xl border border-line bg-surface text-xs text-muted flex items-center justify-between">
         <span className="flex items-center gap-1.5">
-          <AlertCircle size={14} className="text-subtle flex-shrink-0" />
-          <span>All text in the document sheet is editable. Click any bullet point or summary to refine.</span>
+          <AlertCircle size={14} className="text-subtle shrink-0" />
+          <span>
+            All text in the document sheet is editable. Click any bullet point
+            or summary to refine.
+          </span>
         </span>
         <span className="hidden sm:inline-flex font-mono text-[11px] text-subtle">
           ATS-Verified

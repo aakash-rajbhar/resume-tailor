@@ -23,12 +23,51 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Resume Tailor — Match your resume to any job description",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  ),
+  title: {
+    default: "Resume Tailor — Match your resume to any job description",
+    template: "%s · Resume Tailor",
+  },
   description:
     "Upload your resume and a job description. Get an honest ATS match score and a tailored, single-page resume rewrite.",
+  applicationName: "Resume Tailor",
+  keywords: [
+    "resume",
+    "ATS",
+    "resume tailor",
+    "job description",
+    "career",
+    "keyword matching",
+  ],
+  authors: [{ name: "Resume Tailor" }],
+  alternates: { canonical: "/" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Resume Tailor",
+    title: "Resume Tailor — Match your resume to any job description",
+    description:
+      "Get an honest ATS match score and a tailored, single-page resume rewrite — with zero invented experience.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Resume Tailor — Match your resume to any job description",
+    description:
+      "Get an honest ATS match score and a tailored, single-page resume rewrite.",
+  },
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  colorScheme: "light dark",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f3efe6" },
     { media: "(prefers-color-scheme: dark)", color: "#131110" },

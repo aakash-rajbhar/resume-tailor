@@ -52,16 +52,31 @@ Open http://localhost:3000, upload your resume, paste a job description, and cli
 ```
 src/
   app/
-    page.tsx                 UI — upload/paste form + results panel
+    page.tsx                 Workspace controller — steps, analysis, persistence
+    layout.tsx               Fonts, theme bootstrap, metadata
+    error.tsx / global-error.tsx / not-found.tsx / loading.tsx
+    globals.css              Design tokens (Tailwind v4 @theme), utilities
     api/analyze/route.ts     Parses resume, calls the AI, returns tailored JSON
     api/download/route.ts    Turns tailored JSON into a downloadable .docx
+    api/test-ai/route.ts     Validates a provider API key
+    api/groq-models/route.ts Lists available Groq models
   components/
-    ScoreGauge.tsx            ATS score dial (before -> after)
+    HeaderBar.tsx, ProviderChip.tsx, ThemeToggle.tsx, SettingsPanel.tsx
+    ErrorBoundary.tsx
+    landing/LandingHero.tsx
+    workspace/Step1Resume.tsx, Step2Job.tsx, Step3Loading.tsx
+    results/ResultsWorkspaceNew.tsx, GapAnalysisPanel.tsx, DocumentCanvas.tsx
+    ui/Button.tsx, Badge.tsx, Stepper.tsx, orbital-sphere.tsx
   lib/
     parseFile.ts              .docx/.pdf/.txt -> plain text
     ai.ts                     Gemini/Groq API wrapper (JSON-mode)
     prompt.ts                 The system prompt with the truthfulness rules
-    docxBuilder.ts             Builds the downloadable .docx from the tailored JSON
+    docxBuilder.ts            Builds the downloadable .docx from the tailored JSON
+    pdfBuilder.ts             Builds the client-side PDF export (jsPDF)
+    settings.ts               Provider/API-key/theme persistence
+    workspaceStore.ts         Resume/JD/result persistence + URL step sync
+    normalizeResume.ts        Defends against malformed AI output
+    cn.ts                     Dependency-free class-name merger
     types.ts                  Shared TailoredResume type
 ```
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, type FileRejection } from "react-dropzone";
 import {
   UploadCloud,
   FileText,
@@ -11,8 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowRight,
-  RefreshCw,
 } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 interface Step1ResumeProps {
   mode: "upload" | "paste";
@@ -37,25 +37,47 @@ export default function Step1Resume({
   const [showExtractedPreview, setShowExtractedPreview] = useState(false);
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], rejectedFiles: unknown[]) => {
+    (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
       setErrorMessage(null);
       if (rejectedFiles && rejectedFiles.length > 0) {
-        setErrorMessage("Please upload a supported format (.pdf, .docx, .txt) under 10MB.");
+        const code = rejectedFiles[0]?.errors?.[0]?.code;
+        if (code === "file-too-large") {
+          setErrorMessage(
+            "That file is larger than 10MB. Please upload a smaller file.",
+          );
+        } else if (code === "file-invalid-type") {
+          setErrorMessage(
+            "Unsupported format. Please upload a .pdf, .docx, or .txt file.",
+          );
+        } else if (code === "too-many-files") {
+          setErrorMessage("Please drop just one resume file at a time.");
+        } else {
+          setErrorMessage(
+            "We couldn't read that file. Please try a .pdf, .docx, or .txt under 10MB.",
+          );
+        }
         return;
       }
-      if (acceptedFiles && acceptedFiles[0]) {
-        const selected = acceptedFiles[0];
+      const selected = acceptedFiles?.[0];
+      if (selected) {
+        if (selected.size === 0) {
+          setErrorMessage(
+            "That file appears to be empty. Please choose another.",
+          );
+          return;
+        }
         onSelectFile(selected);
       }
     },
-    [onSelectFile]
+    [onSelectFile],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       "application/pdf": [".pdf"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        [".docx"],
       "text/plain": [".txt"],
     },
     maxFiles: 1,
@@ -124,10 +146,15 @@ export default function Step1Resume({
             >
               <input {...getInputProps()} />
               <div className="w-12 h-12 rounded-xl bg-surface border border-line flex items-center justify-center text-muted mb-3 shadow-xs">
-                <UploadCloud size={24} className={isDragActive ? "text-accent" : ""} />
+                <UploadCloud
+                  size={24}
+                  className={isDragActive ? "text-accent" : ""}
+                />
               </div>
               <p className="text-sm font-semibold text-ink">
-                {isDragActive ? "Drop your resume here" : "Drag and drop your resume file"}
+                {isDragActive
+                  ? "Drop your resume here"
+                  : "Drag and drop your resume file"}
               </p>
               <p className="text-xs text-muted mt-1">
                 or click to browse your computer
@@ -139,7 +166,7 @@ export default function Step1Resume({
           ) : (
             <div className="p-5 rounded-xl border border-green-border bg-green-soft/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-surface border border-green-border flex items-center justify-center text-green flex-shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-surface border border-green-border flex items-center justify-center text-green shrink-0">
                   <CheckCircle2 size={20} />
                 </div>
                 <div className="min-w-0">
@@ -153,21 +180,25 @@ export default function Step1Resume({
               </div>
 
               <div className="flex items-center gap-2 self-end sm:self-auto">
-                <button
+                <Button
                   type="button"
+                  variant="danger"
+                  size="sm"
                   onClick={() => onSelectFile(null)}
-                  className="px-2.5 py-1.5 rounded-lg border border-line bg-surface text-xs text-muted hover:text-danger hover:border-danger-border transition-colors flex items-center gap-1.5"
+                  icon={<Trash2 size={14} aria-hidden />}
                 >
-                  <Trash2 size={13} />
-                  <span>Remove</span>
-                </button>
+                  Remove
+                </Button>
               </div>
             </div>
           )}
 
           {errorMessage && (
-            <div className="p-3.5 rounded-lg border border-danger-border bg-danger-soft text-xs text-danger flex items-center gap-2">
-              <AlertCircle size={15} className="flex-shrink-0" />
+            <div
+              role="alert"
+              className="p-3.5 rounded-lg border border-danger-border bg-danger-soft text-xs text-danger flex items-center gap-2"
+            >
+              <AlertCircle size={15} className="shrink-0" aria-hidden />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -186,6 +217,9 @@ export default function Step1Resume({
               }}
               placeholder="Paste your complete resume text here (Summary, Experience, Skills, Education)…"
               rows={10}
+              maxLength={50000}
+              dir="auto"
+              aria-label="Resume text"
               className="w-full p-4 rounded-xl border border-line bg-surface text-sm leading-relaxed font-mono resize-y min-h-[200px] focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
             />
             {text.length > 0 && (
@@ -202,13 +236,19 @@ export default function Step1Resume({
 
           <div className="flex items-center justify-between text-xs text-muted font-mono">
             <span>Minimum 30 characters</span>
-            <span>{text.trim().length} chars · {text.trim() ? text.trim().split(/\s+/).length : 0} words</span>
+            <span>
+              {text.trim().length} chars ·{" "}
+              {text.trim() ? text.trim().split(/\s+/).length : 0} words
+            </span>
           </div>
 
           {text.trim().length > 0 && text.trim().length < 30 && (
             <p className="text-xs text-warning flex items-center gap-1">
               <AlertCircle size={13} />
-              <span>Resume looks too brief. Paste your full work experience and skills.</span>
+              <span>
+                Resume looks too brief. Paste your full work experience and
+                skills.
+              </span>
             </p>
           )}
         </div>
@@ -226,7 +266,11 @@ export default function Step1Resume({
               <FileText size={14} />
               <span>Verify Extracted Content</span>
             </span>
-            {showExtractedPreview ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showExtractedPreview ? (
+              <ChevronUp size={14} />
+            ) : (
+              <ChevronDown size={14} />
+            )}
           </button>
           {showExtractedPreview && (
             <div className="p-4 bg-surface max-h-56 overflow-y-auto text-xs font-mono text-ink whitespace-pre-wrap leading-relaxed border-t border-line">
@@ -239,17 +283,14 @@ export default function Step1Resume({
       {/* Navigation action */}
       <div className="pt-4 border-t border-line flex items-center justify-between">
         <span className="text-xs text-muted font-mono">
-          {hasValidResume ? "Resume ready" : "Please provide your resume to continue"}
+          {hasValidResume
+            ? "Resume ready"
+            : "Please provide your resume to continue"}
         </span>
-        <button
-          type="button"
-          disabled={!hasValidResume}
-          onClick={onNext}
-          className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-accent hover:bg-accent-hover text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <span>Continue to Job Description</span>
-          <ArrowRight size={15} />
-        </button>
+        <Button type="button" disabled={!hasValidResume} onClick={onNext}>
+          Continue to Job Description
+          <ArrowRight size={15} aria-hidden />
+        </Button>
       </div>
     </div>
   );

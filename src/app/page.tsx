@@ -1,14 +1,30 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import dynamic from "next/dynamic";
+import { motion } from "motion/react";
 import { Toaster, toast } from "sonner";
 import HeaderBar from "@/components/HeaderBar";
 import Stepper, { type FlowStep } from "@/components/ui/Stepper";
 import Step1Resume from "@/components/workspace/Step1Resume";
 import Step2Job from "@/components/workspace/Step2Job";
 import Step3Loading from "@/components/workspace/Step3Loading";
-import ResultsWorkspaceNew from "@/components/results/ResultsWorkspaceNew";
+import ErrorBoundary from "@/components/ErrorBoundary";
+
+// Results view (gap analysis + document canvas) is only needed after an
+// analysis completes, so keep it out of the initial bundle.
+const ResultsWorkspaceNew = dynamic(
+  () => import("@/components/results/ResultsWorkspaceNew"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-8 rounded-lg border border-line bg-surface animate-pulse" role="status" aria-label="Loading results">
+        <div className="h-5 w-40 rounded bg-surface-2 mb-4" />
+        <div className="h-40 rounded bg-surface-2" />
+      </div>
+    ),
+  },
+);
 import LandingHero from "@/components/landing/LandingHero";
 import SettingsPanel from "@/components/SettingsPanel";
 import {
@@ -18,6 +34,14 @@ import {
   applyTheme,
   DEFAULT_SETTINGS,
 } from "@/lib/settings";
+import { normalizeTailoredResume } from "@/lib/normalizeResume";
+import {
+  loadWorkspace,
+  saveWorkspace,
+  getUrlStep,
+  setUrlStep,
+  type WorkspaceSnapshot,
+} from "@/lib/workspaceStore";
 import type { TailoredResume } from "@/lib/types";
 
 function subscribeSystemTheme(callback: () => void): () => void {
@@ -64,10 +88,106 @@ export default function Home() {
   const [result, setResult] = useState<TailoredResume | null>(null);
 
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const rateLimitTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hydratedRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     applyTheme(settings.theme);
   }, [settings.theme]);
+
+  // Restore persisted workspace on mount. Reading localStorage is only
+  // possible client-side after mount (SSR cannot), so setState here is required.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const saved = loadWorkspace();
+    if (!saved) {
+      hydratedRef.current = true;
+      return;
+    }
+    setResumeMode(saved.resumeMode === "paste" ? "paste" : "upload");
+    setResumeText(saved.resumeText ?? "");
+    setJdText(saved.jdText ?? "");
+    setJobTitle(saved.jobTitle ?? "");
+    setCompany(saved.company ?? "");
+    setFocusTone(saved.focusTone ?? "ats");
+    setAdditionalPrompt(saved.additionalPrompt ?? "");
+    setSinglePage(saved.singlePage ?? true);
+
+    const hasResumeText = !!(saved.resumeText && saved.resumeText.trim().length > 0);
+    const hasJd = !!(saved.jdText && saved.jdText.trim().length > 0);
+    const urlStep = getUrlStep();
+    const desiredStep = urlStep ?? saved.step ?? 1;
+
+    if (saved.result) {
+      setResult(normalizeTailoredResume(saved.result));
+      setCurrentStep(3);
+    } else if (desiredStep >= 2 && hasResumeText && hasJd) {
+      setCurrentStep(2);
+    } else {
+      setCurrentStep(1);
+    }
+    hydratedRef.current = true;
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Persist workspace (debounced; cancelled if state changes again first).
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    const snapshot: WorkspaceSnapshot = {
+      version: 1,
+      resumeMode,
+      resumeText,
+      jdText,
+      jobTitle,
+      company,
+      focusTone,
+      additionalPrompt,
+      singlePage,
+      step: currentStep,
+      result,
+    };
+    const t = setTimeout(() => saveWorkspace(snapshot), 400);
+    return () => clearTimeout(t);
+  }, [
+    resumeMode,
+    resumeText,
+    jdText,
+    jobTitle,
+    company,
+    focusTone,
+    additionalPrompt,
+    singlePage,
+    currentStep,
+    result,
+  ]);
+
+  // Reflect the current step in the URL (?step=) for reload/deeplink.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (currentStep === 3 && !result) return;
+    setUrlStep(currentStep);
+  }, [currentStep, result]);
+
+  // Warn before leaving while an analysis is in flight.
+  useEffect(() => {
+    if (!loading) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [loading]);
+
+  // Cancel any in-flight request on unmount.
+  useEffect(() => {
+    return () => {
+      if (rateLimitTimerRef.current) clearInterval(rateLimitTimerRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const updateSettings = (next: typeof settings) => writeSettings(next);
   const isDark =
@@ -147,9 +267,25 @@ export default function Home() {
 
   // Handle Submit
   async function handleSubmit() {
+    if (loading) return; // guard against double-submit / double Enter
     setLoading(true);
     setResult(null);
     setCurrentStep(3);
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.error("You're offline", {
+        description: "Reconnect to the internet, then try again.",
+      });
+      setLoading(false);
+      setCurrentStep(2);
+      return;
+    }
+
+    // Cancel any previous in-flight request and start a new one.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const requestId = ++requestIdRef.current;
 
     try {
       const fd = new FormData();
@@ -167,33 +303,108 @@ export default function Home() {
         fd.set("resumeText", resumeText);
       }
 
-      const res = await fetch("/api/analyze", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong.");
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        body: fd,
+        signal: controller.signal,
+      });
 
-      setResult(data as TailoredResume);
+      // Ignore responses from a superseded request.
+      if (requestId !== requestIdRef.current) return;
+
+      // Parse defensively: the API may return non-JSON (5xx HTML, truncated body).
+      const raw = await res.text();
+      let data: unknown = null;
+      try {
+        data = raw ? JSON.parse(raw) : null;
+      } catch {
+        throw Object.assign(
+          new Error(
+            res.ok
+              ? "The server returned an unexpected response. Please try again."
+              : `The server returned an error (${res.status}). Please try again.`,
+          ),
+          { status: res.status },
+        );
+      }
+
+      if (!res.ok) {
+        const message =
+          (data as { error?: string } | null)?.error ||
+          `Something went wrong (${res.status}).`;
+        throw Object.assign(new Error(message), { status: res.status });
+      }
+
+      if (requestId !== requestIdRef.current || controller.signal.aborted) return;
+
+      const normalized = normalizeTailoredResume(data);
+      setResult(normalized);
+      const delta = normalized.atsScoreAfter - normalized.atsScoreBefore;
       toast.success("Resume tailored successfully", {
-        description: `Match score: ${data.atsScoreBefore}% → ${data.atsScoreAfter}% (${data.atsScoreAfter - data.atsScoreBefore >= 0 ? "+" : ""}${data.atsScoreAfter - data.atsScoreBefore} pts)`,
+        description: `Match score: ${normalized.atsScoreBefore}% → ${normalized.atsScoreAfter}% (${delta >= 0 ? "+" : ""}${delta} pts)`,
       });
     } catch (err) {
+      // A user-initiated cancel is not an error — stay silent.
+      if (controller.signal.aborted || requestId !== requestIdRef.current) {
+        return;
+      }
       const message =
         err instanceof Error ? err.message : "Something went wrong.";
-      const formatted = formatErrorMessage(message);
-      toast.error(formatted.title, {
-        description: formatted.description,
-        action: formatted.action
-          ? {
-              label: formatted.action.label,
-              onClick: formatted.action.onClick,
-            }
-          : undefined,
-        duration: formatted.action ? 10000 : 6000,
-      });
+      const status =
+        typeof (err as { status?: unknown })?.status === "number"
+          ? ((err as { status: number }).status)
+          : undefined;
+
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        toast.error("You're offline", {
+          description: "Reconnect to the internet, then try again.",
+        });
+      } else if (status === 429) {
+        showRateLimitToast(message);
+      } else {
+        const formatted = formatErrorMessage(message);
+        toast.error(formatted.title, {
+          description: formatted.description,
+          action: formatted.action
+            ? {
+                label: formatted.action.label,
+                onClick: formatted.action.onClick,
+              }
+            : undefined,
+          duration: formatted.action ? 10000 : 6000,
+        });
+      }
       // Return to step 2 so user can retry or adjust
       setCurrentStep(2);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        abortRef.current = null;
+      }
     }
+  }
+
+  function showRateLimitToast(message: string) {
+    if (rateLimitTimerRef.current) clearInterval(rateLimitTimerRef.current);
+    const id = "rate-limit";
+    let seconds = 30;
+    const render = () =>
+      toast.error("Rate limit reached", {
+        id,
+        description: `${message.slice(0, 120)} Try again in ${seconds}s.`,
+        duration: 35000,
+      });
+    render();
+    rateLimitTimerRef.current = setInterval(() => {
+      seconds -= 1;
+      if (seconds <= 0) {
+        if (rateLimitTimerRef.current) clearInterval(rateLimitTimerRef.current);
+        rateLimitTimerRef.current = null;
+        toast.dismiss(id);
+        return;
+      }
+      render();
+    }, 1000);
   }
 
   // Handle Download DOCX
@@ -228,8 +439,20 @@ export default function Home() {
   }
 
   const handleStartOver = () => {
+    if (
+      result &&
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "Start over? This clears your tailored results. Your resume and job description stay so you can adjust and re-run."
+      )
+    ) {
+      return;
+    }
+    abortRef.current?.abort();
+    abortRef.current = null;
     setResult(null);
     setCurrentStep(1);
+    setUrlStep(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -248,6 +471,12 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 flex flex-col flex-1">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-toast focus:px-4 focus:py-2 focus:rounded-md focus:bg-surface focus:border focus:border-line focus:text-ink focus:text-sm"
+        >
+          Skip to content
+        </a>
         <HeaderBar
           isDark={isDark}
           onToggleTheme={toggleTheme}
@@ -257,7 +486,7 @@ export default function Home() {
           onHowItWorksClick={handleScrollToWorkspace}
         />
 
-        <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 flex-1 py-8 sm:py-10 space-y-10">
+        <main id="main" className="max-w-5xl w-full mx-auto px-4 sm:px-6 flex-1 py-8 sm:py-10 space-y-10 scroll-mt-16">
           {/* Landing hero visible when idle at step 1 without active result */}
           {currentStep === 1 && !result && (
             <LandingHero onStart={handleScrollToWorkspace} />
@@ -352,16 +581,18 @@ export default function Home() {
                 )}
 
                 {result && !loading && (
-                  <ResultsWorkspaceNew
-                    result={result}
-                    originalText={resumeText}
-                    downloading={downloading}
-                    singlePage={singlePage}
-                    onToggleSinglePage={setSinglePage}
-                    onDownloadDocx={handleDownload}
-                    onStartOver={handleStartOver}
-                    onUpdateResume={(updated) => setResult(updated)}
-                  />
+                  <ErrorBoundary>
+                    <ResultsWorkspaceNew
+                      result={result}
+                      originalText={resumeText}
+                      downloading={downloading}
+                      singlePage={singlePage}
+                      onToggleSinglePage={setSinglePage}
+                      onDownloadDocx={handleDownload}
+                      onStartOver={handleStartOver}
+                      onUpdateResume={(updated) => setResult(updated)}
+                    />
+                  </ErrorBoundary>
                 )}
               </motion.div>
             )}
