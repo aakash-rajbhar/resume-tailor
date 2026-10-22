@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "baseline": "node scripts/baseline.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -23,7 +26,8 @@
     "react-dom": "19.2.4",
     "react-dropzone": "^20.1.3",
     "sonner": "^2.0.7",
-    "three": "^0.186.1"
+    "three": "^0.186.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -34,6 +38,7 @@
     "eslint-config-next": "16.2.11",
     "prettier": "3.9.10",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

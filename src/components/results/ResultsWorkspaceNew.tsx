@@ -71,6 +71,9 @@ export default function ResultsWorkspaceNew({
             matchedKeywords={result.matchedKeywords}
             missingKeywords={result.missingKeywords}
             notes={result.notes}
+            addedKeywords={result.addedKeywords}
+            modelUsed={result.modelUsed}
+            fallbackUsed={result.fallbackUsed}
           />
         </div>
 

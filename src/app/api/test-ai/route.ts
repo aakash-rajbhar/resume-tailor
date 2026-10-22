@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { testAI, type AIProvider } from "@/lib/ai";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("test-ai error:", message);
+    logger.error("test-ai failed", {
+      message,
+      name: err instanceof Error ? err.name : "unknown",
+    });
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }

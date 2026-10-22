@@ -1,0 +1,28 @@
+Full Stack Engineer
+
+About the role
+We are looking for a Full Stack Engineer to build and scale customer-facing web products. You will own features end to end, from API design to UI polish, and work directly with product and design.
+
+What you'll do
+- Design and build backend services and REST APIs that are secure, observable and easy to extend.
+- Build responsive, accessible user interfaces with React and Next.js, focusing on performance and Core Web Vitals.
+- Model and query relational data with PostgreSQL, and work with MongoDB where a document model fits better.
+- Ship to production on AWS using infrastructure as code, and own CI/CD pipelines.
+- Write automated tests with Jest and Playwright and keep the test suite meaningful.
+- Collaborate in code review, mentor junior engineers, and raise the quality bar for the whole team.
+
+Requirements
+- Strong proficiency in JavaScript and TypeScript.
+- Production experience with React and Next.js.
+- Solid backend experience with Node.js and Express, designing REST APIs.
+- Hands-on experience with PostgreSQL and MongoDB.
+- Experience deploying to AWS and working with CI/CD pipelines.
+- Working knowledge of Docker and Git/GitHub workflows.
+- Bachelor's degree in Computer Science, Information Technology or a related field.
+
+Preferred
+- Experience with Kubernetes and infrastructure as code tooling such as Terraform.
+- Familiarity with GraphQL and caching layers such as Redis.
+- Experience with Prisma or other modern data access layers.
+- Exposure to testing practices including unit, integration and end-to-end testing.
+- Contributions to open source.

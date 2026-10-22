@@ -1,0 +1,42 @@
+Aakash Rajbhar
+Faridabad, Haryana, India | +91 9311687306 | akash.kumarajbhar@gmail.com | linkedin.com/in/aakash-rajbhar | github.com/aakash-rajbhar | aakashrajbhar.vercel.app
+Front End Developer | React.js & Next.js Specialist
+SUMMARY
+Highly skilled Fullstack Developer with 2+ years of hands-on experience in building scalable, high-performance web applications using React.js and Next.js.
+Proven ability to architect responsive UI components, optimize application performance, and deliver end-to-end features. Adept at collaborating with backend, design, and product teams to ensure robust, clean code and seamless user experiences.
+EDUCATION
+Guru Gobind Singh Indraprastha University 2022 – 2026
+Bachelor of Technology in Information Technology — CGPA: 9.2/10
+TECHNICAL SKILLS
+Languages: JavaScript, TypeScript, Python, Java
+Frontend: React.js, Next.js, Material UI, HTML5, CSS3, Tailwind CSS, Redux, SSR, SSG, ISR, Responsive Design, Web Vitals, Performance Optimization
+Backend: Node.js, Express.js, Django, REST APIs, JWT
+Database: MongoDB, PostgreSQL, MySQL, Prisma
+Tools/Platforms: Git/GitHub, Docker, AWS (EC2, RDS, S3, Amplify), CI/CD, Cloudinary, Stripe, Sentry, Posthog, Jest, Playwright
+Other: OOP, Data Structures & Algorithms, Design Patterns, Agile, Scalability, Version Control
+EXPERIENCE
+Software Developer Intern — WhatBytes — Remote — Feb 2026 – Present
+• Developed and shipped full-stack features end-to-end using React.js, Next.js, and TypeScript for the frontend, integrated with Node.js/Django backends and PostgreSQL databases.
+• Designed and implemented robust REST APIs, meticulously managing complex data flow between sophisticated frontend and backend systems to ensure seamless application functionality.
+• Successfully deployed 3+ new projects and migrated 1 critical production application to AWS (EC2, RDS, S3, Amplify), significantly enhancing application scalability and reliability.
+• Authored over 200 comprehensive unit and end-to-end tests using Jest and Playwright, rigorously strengthening code quality and boosting release confidence by 30%.
+Software Developer Intern — Razorpod — On-site, Gurugram — Jul 2025 – Oct 2025
+• Optimized website performance by 35% through strategic component optimization, advanced caching strategies, and meticulous code refactoring, improving user experience and Core Web Vitals.
+• Architected and built highly responsive, accessible UIs in Next.js, leveraging SSR, SSG, and ISR techniques to achieve faster load times and significantly boost SEO rankings.
+• Integrated complex REST APIs and Strapi CMS to power dynamic, scalable content management systems, enabling efficient content delivery across various platforms.
+• Delivered critical features end-to-end by rigorously applying Agile methodologies, DevOps principles, and CI/CD practices, ensuring rapid and reliable software deployment.
+MERN Stack Developer Intern — GRID R&D — Remote — Jun 2025 – Aug 2025
+• Developed and optimized responsive web applications utilizing React.js for the frontend and Node.js/Express with PostgreSQL for the backend, ensuring cross-browser compatibility.
+• Designed and successfully shipped an innovative invite feature, enabling users to seamlessly send and manage invitations, which boosted overall user engagement by 25%.
+• Debugged and resolved over 20 complex frontend and backend issues, significantly improving application stability and reducing reported bug incidents by 15%.
+PROJECTS
+SecureKeep | Next.js, Node.js, TypeScript, JWT, MongoDB, Tailwind CSS, Nodemailer
+• Engineered a secure credential-management backend utilizing AES-256 encryption for data at rest and JWT-based authentication for robust access control.
+• Designed and implemented a suite of RESTful APIs with comprehensive server-side validation, authentication, and authorization mechanisms to protect sensitive user data.
+• Applied Object-Oriented Programming (OOP) and modular design principles to construct maintainable, testable, and scalable backend code, ensuring high code quality.
+Storely – Cloud Storage | Next.js, Appwrite, Tailwind CSS
+• Developed and integrated robust backend APIs for a cloud storage platform, handling secure file upload, sharing functionalities, and granular access control.
+• Implemented OTP-based authentication and secure data handling protocols, ensuring user data privacy and system integrity.
+• Optimized backend performance for enhanced reliability and responsiveness under multiple concurrent users, achieving efficient file operations and a smooth user experience.
+CERTIFICATIONS
+Certified Claude Developer — Anthropic · SQL & Relational Databases — IBM

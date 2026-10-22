@@ -90,5 +90,9 @@ export function normalizeTailoredResume(raw: unknown): TailoredResume {
     projects,
     education,
     certifications: asStringArray(r.certifications),
+    addedKeywords: asStringArray(r.addedKeywords),
+    modelUsed: asString(r.modelUsed),
+    fallbackUsed: r.fallbackUsed === true,
+    jdModelUsed: asString(r.jdModelUsed),
   };
 }

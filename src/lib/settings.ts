@@ -1,4 +1,5 @@
 import type { AIProvider } from "./ai";
+import { DEFAULT_GEMINI_MODEL, DEFAULT_GROQ_MODEL } from "./models";
 
 export type ThemePreference = "light" | "dark" | "system";
 
@@ -17,10 +18,25 @@ export const DEFAULT_SETTINGS: AppSettings = {
   provider: "gemini",
   geminiKey: "",
   groqKey: "",
-  geminiModel: "gemini-3.8-flash",
-  groqModel: "llama-3.3-70b-versatile",
+  geminiModel: DEFAULT_GEMINI_MODEL,
+  groqModel: DEFAULT_GROQ_MODEL,
   theme: "system",
 };
+
+const DEPRECATED_GEMINI_MODELS = new Set([
+  "gemini-2.0-flash",
+  "gemini-1.5-pro",
+  "gemini-1.5-flash",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+]);
+
+const DEPRECATED_GROQ_MODELS = new Set([
+  "mixtral-8x7b-32768",
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
+  "llama-3.1-70b-versatile",
+]);
 
 let cached: AppSettings | null = null;
 const listeners = new Set<() => void>();
@@ -37,11 +53,11 @@ function readFromStorage(): AppSettings {
     const parsed = { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) };
     
     // Auto-migrate deprecated models to prevent silent failures
-    if (parsed.geminiModel === "gemini-2.0-flash" || parsed.geminiModel === "gemini-1.5-pro") {
-      parsed.geminiModel = "gemini-3.8-flash";
+    if (DEPRECATED_GEMINI_MODELS.has(parsed.geminiModel)) {
+      parsed.geminiModel = DEFAULT_GEMINI_MODEL;
     }
-    if (parsed.groqModel === "mixtral-8x7b-32768" || !parsed.groqModel) {
-      parsed.groqModel = "llama-3.3-70b-versatile";
+    if (!parsed.groqModel || DEPRECATED_GROQ_MODELS.has(parsed.groqModel)) {
+      parsed.groqModel = DEFAULT_GROQ_MODEL;
     }
     return parsed;
   } catch {

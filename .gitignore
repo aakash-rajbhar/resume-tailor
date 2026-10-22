@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 /references
+# LLM cache
+.cache/
+repomix-output.xml
+*.pdf
+.cache/

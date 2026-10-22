@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   TrendingUp,
+  Cpu,
 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 
@@ -17,6 +18,9 @@ interface GapAnalysisPanelProps {
   matchedKeywords: string[];
   missingKeywords: string[];
   notes?: string[];
+  addedKeywords?: string[];
+  modelUsed?: string;
+  fallbackUsed?: boolean;
 }
 
 export default function GapAnalysisPanel({
@@ -25,10 +29,14 @@ export default function GapAnalysisPanel({
   matchedKeywords,
   missingKeywords,
   notes = [],
+  addedKeywords = [],
+  modelUsed,
+  fallbackUsed = false,
 }: GapAnalysisPanelProps) {
   const [openSections, setOpenSections] = useState({
     matched: true,
     missing: true,
+    added: true,
     suggestions: true,
   });
 
@@ -86,6 +94,23 @@ export default function GapAnalysisPanel({
               ? "Good alignment. Review the missing skill recommendations below to close remaining gaps."
               : "Moderate match. Consider adding specific relevant project experience."}
         </p>
+
+        {modelUsed && (
+          <div className="flex items-center justify-between gap-2 border-t border-line pt-3 text-xs text-muted">
+            <span className="flex items-center gap-1.5 min-w-0">
+              <Cpu size={12} aria-hidden className="shrink-0" />
+              <span className="truncate">
+                Tailored with{" "}
+                <span className="font-mono text-ink">{modelUsed}</span>
+              </span>
+            </span>
+            {fallbackUsed && (
+              <Badge variant="partial" size="sm" className="shrink-0">
+                fallback model
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Matched Keywords Card */}
@@ -172,6 +197,55 @@ export default function GapAnalysisPanel({
                 </div>
               )}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Added Keywords - needs candidate confirmation */}
+      <div className="paper-card overflow-hidden shadow-xs">
+        <button
+          type="button"
+          onClick={() => toggleSection("added")}
+          className="w-full p-4 flex items-center justify-between text-left hover:bg-surface-2/40 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-accent" />
+            <span className="text-xs font-semibold text-ink uppercase tracking-wider">
+              Added Keywords ({addedKeywords.length})
+            </span>
+          </div>
+          {openSections.added ? (
+            <ChevronUp size={15} />
+          ) : (
+            <ChevronDown size={15} />
+          )}
+        </button>
+
+        {openSections.added && (
+          <div className="px-4 pb-4 pt-1 border-t border-line">
+            {addedKeywords.length > 0 ? (
+              <>
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {addedKeywords.map((kw, idx) => (
+                    <Badge
+                      key={`${kw}-${idx}`}
+                      variant="accent"
+                      title="Appears in the tailored resume but was not in the original"
+                    >
+                      {kw}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-xs text-muted leading-relaxed pt-3">
+                  Confirm these are true. The tailored resume should only claim
+                  what you can defend in an interview.
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-muted italic py-2">
+                No keywords were added by the tailoring step.
+              </p>
+            )}
           </div>
         )}
       </div>

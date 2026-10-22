@@ -38,4 +38,8 @@ export interface TailoredResume {
   projects: ProjectItem[];
   education: EducationItem[];
   certifications: string[];
+  addedKeywords?: string[];
+  modelUsed?: string;
+  fallbackUsed?: boolean;
+  jdModelUsed?: string;
 }
