@@ -80,7 +80,15 @@ export const GROQ_MODELS: GroqModelConfig[] = [
   },
 ];
 
-export const EXTRACTION_MODEL = "gemini-2.5-flash"; // pin extraction model; will verify via live list-models and may adjust
+/**
+ * Single pinned model used for JD extraction, independent of the provider the
+ * user picks for tailoring. `gemini-3.6-flash` supports `thinkingLevel:
+ * minimal` (fastest deterministic pass) and is reachable on the free tier.
+ */
+export const EXTRACTION_MODEL = "gemini-3.6-flash";
+
+/** Model used for extraction if the pinned extraction model is unavailable. */
+export const EXTRACTION_FALLBACK_MODEL = "openai/gpt-oss-20b";
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 export const DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b";

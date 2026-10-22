@@ -1,10 +1,13 @@
 import { generateJSON, type AIConfig, type AIProvider } from "./ai";
 import { cleanTextForHash, hashKey, withCache } from "./cache";
-import { buildJDUserPrompt, JD_SYSTEM_PROMPT } from "./prompt";
+import {
+  buildJDUserPrompt,
+  EXTRACT_PROMPT_VERSION,
+  JD_SYSTEM_PROMPT,
+} from "./prompt";
 import { JdSchema, type Jd } from "./schemas";
-import { EXTRACTION_MODEL, fallbackChain } from "./models";
+import { EXTRACTION_FALLBACK_MODEL, EXTRACTION_MODEL } from "./models";
 import { canonicalizeExtractedSkills } from "./extractCanonicalize";
-import { EXTRACT_PROMPT_VERSION } from "./prompt";
 
 export interface ExtractJDOptions {
   provider?: AIProvider;
@@ -36,59 +39,57 @@ export async function extractJD(
   options: ExtractJDOptions = {},
 ): Promise<ExtractJDResult> {
   const cleaned = cleanTextForHash(jdText);
-  const extractionModelId = EXTRACTION_MODEL;
-  const key = hashKey("jd-extract", EXTRACT_PROMPT_VERSION, extractionModelId, cleaned);
 
-  const { value, cached } = await withCache<CachedJD>(key, async () => {
-    let generated;
-    let extractionFallback = false;
-    try {
-      generated = await generateJSON<Jd>({
+  async function runExtraction(
+    provider: AIProvider,
+    model: string,
+  ) {
+    const key = hashKey("jd-extract", EXTRACT_PROMPT_VERSION, model, cleaned);
+    const { value, cached } = await withCache<CachedJD>(key, async () => {
+      const generated = await generateJSON<Jd>({
         system: JD_SYSTEM_PROMPT,
         user: buildJDUserPrompt(jdText),
         schema: JdSchema,
-        provider: "gemini",
-        model: EXTRACTION_MODEL,
+        provider,
+        model,
         config: options.config,
       });
-    } catch (err) {
-      // try fallback to other provider
-      try {
-        generated = await generateJSON<Jd>({
-          system: JD_SYSTEM_PROMPT,
-          user: buildJDUserPrompt(jdText),
-          schema: JdSchema,
-          provider: "groq",
-          model: fallbackChain("groq", "openai/gpt-oss-120b")[0],
-          config: options.config,
-        });
-        extractionFallback = true;
-      } catch (err2) {
-        throw err2;
-      }
-    }
 
-    // apply canonicalizer
-    const canonReq = canonicalizeExtractedSkills(generated.data.required_skills);
-    const canonPref = canonicalizeExtractedSkills(generated.data.preferred_skills);
-    const jd: Jd = {
-      ...generated.data,
-      required_skills: canonReq.skills,
-      preferred_skills: canonPref.skills,
-      other_requirements: [
-        ...(generated.data.other_requirements ?? []),
-        ...canonReq.movedToOther,
-        ...canonPref.movedToOther,
-      ],
-    };
+      // apply canonicalizer
+      const canonReq = canonicalizeExtractedSkills(generated.data.required_skills);
+      const canonPref = canonicalizeExtractedSkills(generated.data.preferred_skills);
+      const jd: Jd = {
+        ...generated.data,
+        required_skills: canonReq.skills,
+        preferred_skills: canonPref.skills,
+        other_requirements: [
+          ...(generated.data.other_requirements ?? []),
+          ...canonReq.movedToOther,
+          ...canonPref.movedToOther,
+        ],
+      };
 
+      return {
+        jd,
+        modelUsed: generated.modelUsed,
+        fallbackUsed: generated.fallbackUsed,
+      };
+    });
+    return { ...value, cached };
+  }
+
+  try {
+    const primary = await runExtraction("gemini", EXTRACTION_MODEL);
     return {
-      jd,
-      modelUsed: generated.modelUsed,
-      fallbackUsed: extractionFallback || generated.fallbackUsed,
+      ...primary,
+      extractionFallback: primary.fallbackUsed,
     };
-  });
-
-  return { ...value, cached, extractionFallback: value.fallbackUsed };
+  } catch {
+    const fallback = await runExtraction("groq", EXTRACTION_FALLBACK_MODEL);
+    return {
+      ...fallback,
+      extractionFallback: true,
+    };
+  }
 }
 
