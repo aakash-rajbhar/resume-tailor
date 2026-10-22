@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import type { AnyPgTable } from "drizzle-orm/pg-core";
 import { createTestDb } from "./helpers/pglite";
 import { createRepos, type Repos } from "@/db/repo";
-import { users, profiles, experience, projects, skills, education, certifications, jobs, verifiedFacts } from "@/db/schema";
+import { users, accounts, profiles, experience, projects, skills, education, certifications, jobs, verifiedFacts } from "@/db/schema";
 import { ConflictError } from "@/lib/errors";
+import { encryptSecret } from "@/lib/crypto";
 import type { Db } from "@/db/client";
 
 const USER_A = "user-a";
@@ -29,8 +30,10 @@ describe("repository ownership", () => {
   let client: Awaited<ReturnType<typeof createTestDb>>["client"];
   let db: Db;
   let repos: Repos;
+  const originalKey = process.env.TOKEN_ENCRYPTION_KEY;
 
   beforeAll(async () => {
+    process.env.TOKEN_ENCRYPTION_KEY = "c".repeat(64);
     const created = await createTestDb();
     client = created.client;
     db = created.db as unknown as Db;
@@ -43,6 +46,8 @@ describe("repository ownership", () => {
   });
 
   afterAll(async () => {
+    if (originalKey === undefined) delete process.env.TOKEN_ENCRYPTION_KEY;
+    else process.env.TOKEN_ENCRYPTION_KEY = originalKey;
     await client.close();
   });
 
@@ -229,6 +234,83 @@ describe("repository ownership", () => {
 
     const rows = await repos.accounts.listForUser("user-c");
     expect(rows).toHaveLength(0);
+  });
+
+  it("never lists another user's accounts and decrypts only for the owner", async () => {
+    await db.insert(users).values([{ id: "user-f", name: "User F" }]);
+
+    const token = "gho_16C7e42F292c6912E7710c838347Ae178B4a";
+    const encrypted = encryptSecret(token);
+
+    await db.insert(accounts).values({
+      userId: USER_A,
+      type: "oauth",
+      provider: "github",
+      providerAccountId: "github-a",
+      access_token: encrypted,
+      token_type: "bearer",
+      scope: "read:user user:email",
+    });
+
+    // The list only returns the caller's own rows.
+    expect(await repos.accounts.listForUser(USER_B)).toHaveLength(0);
+    expect(await repos.accounts.listForUser(USER_A)).toHaveLength(1);
+
+    // The token is only decrypted for the owner, and never in plaintext.
+    expect(await repos.accounts.getGithubToken(USER_B)).toBeNull();
+    expect(await repos.accounts.getGithubToken(USER_A)).toBe(token);
+  });
+
+  it("refuses to read a token that is not encrypted", async () => {
+    await db.insert(users).values([{ id: "user-g", name: "User G" }]);
+
+    await db.insert(accounts).values({
+      userId: "user-g",
+      type: "oauth",
+      provider: "github",
+      providerAccountId: "github-g",
+      access_token: "gho_plaintext_token",
+      token_type: "bearer",
+    });
+
+    await expect(repos.accounts.getGithubToken("user-g")).rejects.toThrow(
+      /not encrypted/,
+    );
+  });
+
+  it("reads a verified fact by question key for the owner only", async () => {
+    await db.insert(users).values([{ id: "user-h", name: "User H" }]);
+
+    await repos.verifiedFacts.create(USER_A, {
+      questionKey: "scale",
+      question: "Have you scaled a system?",
+      answer: "Yes",
+      answerType: "has",
+      status: "verified",
+      source: "interview",
+    });
+
+    expect(
+      await repos.verifiedFacts.getByQuestionKey(USER_A, "scale"),
+    ).not.toBeNull();
+    expect(
+      await repos.verifiedFacts.getByQuestionKey(USER_B, "scale"),
+    ).toBeNull();
+    expect(
+      await repos.verifiedFacts.getByQuestionKey(USER_A, "unknown-key"),
+    ).toBeNull();
+  });
+
+  it("reads a profile only for its owner", async () => {
+    await repos.profiles.create(USER_A, {
+      fullName: "Ada Lovelace",
+      headline: "Engineer",
+      summary: "",
+      links: [],
+    });
+
+    expect(await repos.profiles.get(USER_B)).toBeNull();
+    expect(await repos.profiles.get(USER_A)).not.toBeNull();
   });
 
   it("reports whether a user row exists", async () => {

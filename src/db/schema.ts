@@ -154,8 +154,8 @@ export const profiles = pgTable(
     ...timestamps,
   },
   (table) => [
+    // One profile per user: the unique index also serves the lookups.
     uniqueIndex("profiles_user_id_unique").on(table.userId),
-    index("profiles_user_id_idx").on(table.userId),
   ],
 ).enableRLS();
 
@@ -336,7 +336,10 @@ export const jobs = pgTable(
   },
   (table) => [
     index("jobs_user_id_idx").on(table.userId),
-    index("jobs_user_id_created_at_idx").on(table.userId, table.createdAt),
+    index("jobs_user_id_created_at_idx").on(
+      table.userId,
+      table.createdAt.desc(),
+    ),
   ],
 ).enableRLS();
 

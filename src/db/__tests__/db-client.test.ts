@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { isDatabaseConfigured, setDbForTesting } from "@/db/client";
+import { getDb, isDatabaseConfigured, setDbForTesting } from "@/db/client";
 import { cacheStoreFor } from "@/lib/cache/store";
 import { llmCache as fileCache } from "@/lib/cache";
 import { createTestDb } from "./helpers/pglite";
@@ -19,10 +19,21 @@ describe("database client", () => {
 
   it("does not require DATABASE_URL when imported", async () => {
     delete process.env.DATABASE_URL;
+    process.env.ENABLE_AUTH = "false";
     const clientModule = await import("@/db/client");
 
     expect(clientModule.isDatabaseConfigured()).toBe(false);
     expect(() => clientModule.getDb()).toThrow(/DATABASE_URL/);
+  });
+
+  it("keeps the anonymous flow working with no database configured", async () => {
+    delete process.env.DATABASE_URL;
+    process.env.ENABLE_AUTH = "false";
+
+    // No store is built, so nothing tries to reach a database.
+    expect(cacheStoreFor("jd-extract")).toBe(fileCache);
+    expect(cacheStoreFor("tailor")).toBe(fileCache);
+    expect(() => getDb()).toThrow(/DATABASE_URL/);
   });
 
   it("reports whether a connection string is configured", () => {

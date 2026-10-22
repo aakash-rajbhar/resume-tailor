@@ -1,5 +1,5 @@
 {
-  "id": "a0ecc903-f4c9-44fa-a44a-df4a3c9b72da",
+  "id": "e44475f9-8b92-4e5d-806d-c4fe3341e37e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -727,7 +727,7 @@
             {
               "expression": "created_at",
               "isExpression": false,
-              "asc": true,
+              "asc": false,
               "nulls": "last"
             }
           ],
@@ -968,21 +968,6 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "profiles_user_id_idx": {
-          "name": "profiles_user_id_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}

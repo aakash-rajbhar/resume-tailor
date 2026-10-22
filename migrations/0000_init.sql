@@ -217,11 +217,10 @@ CREATE INDEX "education_user_id_sort_order_idx" ON "education" USING btree ("use
 CREATE INDEX "experience_user_id_idx" ON "experience" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "experience_user_id_sort_order_idx" ON "experience" USING btree ("user_id","sort_order");--> statement-breakpoint
 CREATE INDEX "jobs_user_id_idx" ON "jobs" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "jobs_user_id_created_at_idx" ON "jobs" USING btree ("user_id","created_at");--> statement-breakpoint
+CREATE INDEX "jobs_user_id_created_at_idx" ON "jobs" USING btree ("user_id","created_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "llm_cache_purpose_model_idx" ON "llm_cache" USING btree ("purpose","model");--> statement-breakpoint
 CREATE INDEX "llm_cache_expires_at_idx" ON "llm_cache" USING btree ("expires_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "profiles_user_id_unique" ON "profiles" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "profiles_user_id_idx" ON "profiles" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "projects_user_id_idx" ON "projects" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "projects_user_id_sort_order_idx" ON "projects" USING btree ("user_id","sort_order");--> statement-breakpoint
 CREATE UNIQUE INDEX "projects_user_id_github_repo_id_unique" ON "projects" USING btree ("user_id","github_repo_id");--> statement-breakpoint
