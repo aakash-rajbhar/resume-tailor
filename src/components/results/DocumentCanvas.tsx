@@ -42,12 +42,10 @@ export default function DocumentCanvas({
 }: DocumentCanvasProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("tailored");
   const [copied, setCopied] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"saved" | "editing">("saved");
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
   const [isSinglePage, setIsSinglePage] = useState(singlePage);
 
-  // Local state for inline edits
-  const [resumeData, setResumeData] = useState<TailoredResume>(tailored);
+  const resumeData = tailored;
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close download dropdown on outside click
@@ -100,7 +98,6 @@ export default function DocumentCanvas({
       }
       throw new Error("Clipboard API unavailable");
     } catch {
-      // Fallback for blocked Clipboard API / non-secure contexts.
       try {
         const ta = document.createElement("textarea");
         ta.value = formatted;
@@ -124,7 +121,6 @@ export default function DocumentCanvas({
 
   const handleDownloadPdf = async () => {
     try {
-      // jsPDF is heavy — load it only when the user requests an export.
       const { generateResumePdf } = await import("@/lib/pdfBuilder");
       const doc = generateResumePdf(resumeData, { singlePage: isSinglePage });
       const filename = `${(resumeData.name || "Resume").replace(/\s+/g, "_")}_Tailored.pdf`;
@@ -147,38 +143,6 @@ export default function DocumentCanvas({
     window.print();
   };
 
-  const handleSummaryChange = (newSummary: string) => {
-    setSaveStatus("editing");
-    const updated = { ...resumeData, summary: newSummary };
-    setResumeData(updated);
-    onUpdateResume?.(updated);
-    setTimeout(() => setSaveStatus("saved"), 400);
-  };
-
-  const handleBulletChange = (
-    expIdx: number,
-    bulletIdx: number,
-    newBullet: string,
-  ) => {
-    setSaveStatus("editing");
-    const updated = {
-      ...resumeData,
-      experience: resumeData.experience.map((exp, i) =>
-        i === expIdx
-          ? {
-              ...exp,
-              bullets: exp.bullets.map((b, j) =>
-                j === bulletIdx ? newBullet : b,
-              ),
-            }
-          : exp,
-      ),
-    };
-    setResumeData(updated);
-    onUpdateResume?.(updated);
-    setTimeout(() => setSaveStatus("saved"), 400);
-  };
-
   const toggleSinglePageMode = () => {
     const next = !isSinglePage;
     setIsSinglePage(next);
@@ -191,8 +155,8 @@ export default function DocumentCanvas({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Toolbar — wraps instead of clipping so every control stays reachable on narrow screens */}
+    <div className="space-y-3">
+      {/* Toolbar */}
       <div className="p-2 sm:p-2.5 rounded-lg border border-line bg-surface flex flex-wrap items-center justify-between gap-2">
         {/* Left: View Mode Toggle Tabs */}
         <div className="flex p-0.5 rounded-lg bg-surface-2 border border-line max-w-full overflow-x-auto thin-scrollbar">
@@ -236,8 +200,24 @@ export default function DocumentCanvas({
           )}
         </div>
 
-        {/* Right: Clean, Flush Action Buttons (Never Overflows) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Right: Action Buttons */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap">
+          {/* 1-Page Toggle */}
+          <button
+            type="button"
+            onClick={toggleSinglePageMode}
+            className={`px-2 py-1 rounded-md border text-[11px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              isSinglePage
+                ? "border-green/40 bg-green-soft text-green"
+                : "border-line bg-surface text-muted hover:text-ink"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${isSinglePage ? "bg-green" : "bg-muted"}`}
+            />
+            <span>1-Page</span>
+          </button>
+
           {/* Copy Button */}
           <button
             type="button"
@@ -254,7 +234,7 @@ export default function DocumentCanvas({
             </span>
           </button>
 
-          {/* Download Dropdown Menu */}
+          {/* Download Dropdown */}
           <div className="relative shrink-0" ref={dropdownRef}>
             <button
               type="button"
@@ -331,7 +311,7 @@ export default function DocumentCanvas({
             )}
           </div>
 
-          {/* Reset / Start Over Button */}
+          {/* Start Over Button */}
           <button
             type="button"
             onClick={onStartOver}
@@ -343,291 +323,429 @@ export default function DocumentCanvas({
         </div>
       </div>
 
-      {/* Realistic Document Desk Canvas */}
-      <div className="rounded-2xl border border-line bg-surface-2/50 p-3 sm:p-6 lg:p-8 flex flex-col items-center overflow-x-auto">
-        {/* Document Status Header Bar */}
-        <div className="w-full max-w-[800px] mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted font-mono px-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-accent" />
-            <span className="font-sans font-medium text-ink">
-              Document Preview
-            </span>
-            <span className="text-subtle">·</span>
-            <span className="text-[11px] text-muted flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green" />
-              <span>{saveStatus === "saved" ? "Autosaved" : "Saving…"}</span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* 1-Page Layout Toggle Pill */}
-            <button
-              type="button"
-              onClick={toggleSinglePageMode}
-              className={`px-2 py-0.5 rounded-md border text-[11px] font-sans font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                isSinglePage
-                  ? "border-green/40 bg-green-soft text-green"
-                  : "border-line bg-surface text-muted hover:text-ink"
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${isSinglePage ? "bg-green" : "bg-muted"}`}
-              />
-              <span>1-Page Layout: {isSinglePage ? "ON" : "OFF"}</span>
-            </button>
-            <span className="text-[11px] text-subtle">8.5 × 11 in</span>
-          </div>
+      {/* Document Preview Shell — looks like a real PDF/paper on a desk */}
+      <div className="rounded-xl border border-line bg-neutral-200 dark:bg-neutral-800 p-4 sm:p-6 flex flex-col items-center overflow-x-auto">
+        {/* Paper size label */}
+        <div className="w-full max-w-[820px] mb-2 flex items-center justify-between text-[11px] font-mono text-neutral-500 dark:text-neutral-400 px-1">
+          <span>Resume Preview · 8.5 × 11 in</span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            Read-only preview
+          </span>
         </div>
 
-        {/* The Authentic White Paper Sheet */}
+        {/* The Paper Sheet — styled to look like an actual document */}
         <div
           id="resume-paper-document"
-          className="w-full max-w-[800px] bg-white text-neutral-900 border border-neutral-300 dark:border-neutral-700/80 rounded-xs shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.65)] p-8 sm:p-14 space-y-6 font-sans leading-relaxed text-left select-text print:p-0 print:border-none print:shadow-none"
+          className="w-full max-w-[820px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.15),0_8px_32px_rgba(0,0,0,0.10)] select-text print:shadow-none"
+          style={{
+            fontFamily: "'Times New Roman', Times, serif",
+            fontSize: "10.5pt",
+            lineHeight: "1.4",
+            color: "#000",
+            padding: "0.5in 0.5in 0.5in 0.5in",
+          }}
         >
-          {/* Candidate Header */}
-          <div className="text-center pb-5 border-b border-neutral-200">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight !text-neutral-950 font-serif">
-              {resumeData.name}
-            </h1>
-            <p className="text-xs !text-neutral-600 font-mono mt-1.5 flex flex-wrap justify-center gap-2">
-              {resumeData.contact.split(" | ").map((chunk, i, arr) => (
-                <span
-                  key={`${chunk}-${i}`}
-                  className="inline-flex items-center gap-2 max-w-full"
-                >
-                  <span className="break-all">{chunk}</span>
-                  {i < arr.length - 1 && <span className="opacity-30">|</span>}
-                </span>
-              ))}
-            </p>
-            {resumeData.title && (
-              <div className="mt-2.5">
-                <span className="inline-block px-3 py-0.5 rounded text-xs font-mono font-semibold tracking-wide !bg-neutral-100 !text-neutral-800 border border-neutral-200">
-                  {resumeData.title}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* View Mode: Original */}
+          {/* ── ORIGINAL TEXT VIEW ── */}
           {viewMode === "original" && (
-            <div className="whitespace-pre-wrap font-mono text-xs !text-neutral-800 leading-relaxed max-h-[600px] overflow-y-auto">
+            <pre
+              style={{
+                fontFamily: "monospace",
+                fontSize: "9pt",
+                whiteSpace: "pre-wrap",
+                color: "#222",
+                lineHeight: "1.5",
+              }}
+            >
               {originalText || "No original text available."}
-            </div>
+            </pre>
           )}
 
-          {/* View Mode: Tailored or Diff */}
+          {/* ── TAILORED / DIFF VIEW ── */}
           {viewMode !== "original" && (
             <>
-              {/* Professional Summary */}
-              {resumeData.summary && (
-                <section className="space-y-1.5">
-                  <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
-                    Professional Summary
-                  </h2>
-                  {viewMode === "diff" ? (
-                    <div className="text-xs leading-relaxed !text-emerald-950 p-2.5 rounded !bg-emerald-50 border border-emerald-300">
-                      <span className="font-mono text-[10px] font-bold uppercase mr-1 text-emerald-800">
-                        [Tailored]
-                      </span>
-                      {resumeData.summary}
-                    </div>
-                  ) : (
-                    <textarea
-                      value={resumeData.summary}
-                      onChange={(e) => handleSummaryChange(e.target.value)}
-                      rows={isSinglePage ? 2 : 3}
-                      className="w-full p-2 -mx-2 rounded-md hover:!bg-neutral-100/70 focus:!bg-white text-xs leading-relaxed !text-neutral-800 focus:outline-none focus:ring-1 focus:ring-neutral-400 resize-y transition-colors font-sans"
-                    />
-                  )}
-                </section>
-              )}
+              {/* ── CANDIDATE HEADER ── */}
+              <div style={{ textAlign: "center", marginBottom: "4px" }}>
+                <div
+                  style={{
+                    fontSize: "20pt",
+                    fontWeight: "bold",
+                    letterSpacing: "0.02em",
+                    lineHeight: "1.15",
+                    color: "#000",
+                  }}
+                >
+                  {resumeData.name}
+                </div>
 
-              {/* Technical Skills */}
-              {resumeData.skills && resumeData.skills.length > 0 && (
-                <section className="space-y-1.5">
-                  <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
-                    Technical Skills & Competencies
-                  </h2>
-                  <div className="grid gap-1 text-xs">
-                    {resumeData.skills.map((skill, idx) => (
-                      <div
-                        key={`${skill.label}-${idx}`}
-                        className="grid grid-cols-[130px_1fr] gap-3"
-                      >
-                        <span className="font-mono font-bold !text-neutral-800">
-                          {skill.label}:
-                        </span>
-                        <span className="!text-neutral-800 break-words min-w-0">
-                          {skill.value}
-                        </span>
-                      </div>
+                {resumeData.contact && (
+                  <div
+                    style={{
+                      fontSize: "9.5pt",
+                      color: "#444",
+                      marginTop: "4px",
+                      lineHeight: "1.5",
+                    }}
+                  >
+                    {resumeData.contact.split(" | ").map((chunk, i, arr) => (
+                      <span key={i}>
+                        {chunk}
+                        {i < arr.length - 1 && (
+                          <span style={{ color: "#aaa", margin: "0 4px" }}>
+                            |
+                          </span>
+                        )}
+                      </span>
                     ))}
                   </div>
-                </section>
-              )}
+                )}
 
-              {/* Work Experience */}
-              {resumeData.experience && resumeData.experience.length > 0 && (
-                <section className="space-y-4">
-                  <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
-                    Professional Experience
-                  </h2>
-                  <div className="space-y-4">
-                    {resumeData.experience.map((exp, expIdx) => {
-                      const bullets = isSinglePage
-                        ? exp.bullets.slice(0, 4)
-                        : exp.bullets;
-                      return (
-                        <div key={expIdx} className="space-y-1">
-                          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-                            <div className="text-xs font-bold !text-neutral-950">
-                              {exp.title}{" "}
-                              <span className="font-normal text-neutral-400">
-                                —
-                              </span>{" "}
-                              <span className="font-semibold !text-neutral-800">
-                                {exp.company}
-                              </span>
-                            </div>
-                            <div className="text-[11px] font-mono !text-neutral-600">
-                              {exp.location} | {exp.dates}
-                            </div>
-                          </div>
-
-                          <ul className="space-y-1 text-xs !text-neutral-800 pl-4 list-disc">
-                            {bullets.map((bullet, bulletIdx) => (
-                              <li key={bulletIdx}>
-                                {viewMode === "diff" ? (
-                                  <span className="inline-block p-1 rounded !bg-emerald-50 !text-emerald-950 border border-emerald-300">
-                                    <span className="font-mono text-[9px] font-bold mr-1 text-emerald-800">
-                                      [AI Aligned]
-                                    </span>
-                                    {bullet}
-                                  </span>
-                                ) : (
-                                  <input
-                                    type="text"
-                                    value={bullet}
-                                    onChange={(e) =>
-                                      handleBulletChange(
-                                        expIdx,
-                                        bulletIdx,
-                                        e.target.value,
-                                      )
-                                    }
-                                    className="w-full px-1.5 py-0.5 -mx-1.5 rounded hover:!bg-neutral-100/70 focus:!bg-white focus:outline-none focus:ring-1 focus:ring-neutral-400 text-xs !text-neutral-800 transition-colors font-sans"
-                                  />
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
+                {resumeData.title && (
+                  <div
+                    style={{
+                      fontSize: "10pt",
+                      color: "#333",
+                      marginTop: "3px",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {resumeData.title}
                   </div>
-                </section>
+                )}
+              </div>
+
+              {/* ── PROFESSIONAL SUMMARY ── */}
+              {resumeData.summary && (
+                <div style={{ marginTop: "8px" }}>
+                  <SectionHeading label="Summary" isDiff={viewMode === "diff"} />
+                  <p
+                    style={{
+                      fontSize: "10pt",
+                      color: viewMode === "diff" ? "#065f46" : "#111",
+                      lineHeight: "1.5",
+                      marginTop: "4px",
+                      background: viewMode === "diff" ? "#ecfdf5" : "none",
+                      padding: viewMode === "diff" ? "3px 4px" : "0",
+                      borderRadius: "2px",
+                    }}
+                  >
+                    {resumeData.summary}
+                  </p>
+                </div>
               )}
 
-              {/* Projects */}
-              {resumeData.projects && resumeData.projects.length > 0 && (
-                <section className="space-y-3">
-                  <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
-                    Key Projects
-                  </h2>
-                  <div className="space-y-2.5">
-                    {resumeData.projects.map((proj, pIdx) => {
-                      const pBullets = isSinglePage
-                        ? proj.bullets.slice(0, 2)
-                        : proj.bullets;
-                      return (
-                        <div key={pIdx} className="space-y-0.5">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-xs font-bold !text-neutral-950">
-                              {proj.name}
-                            </span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded !bg-neutral-100 !text-neutral-700 border border-neutral-200">
-                              {proj.tools}
-                            </span>
-                          </div>
-                          <ul className="space-y-0.5 text-xs !text-neutral-800 pl-4 list-disc">
-                            {pBullets.map((b, bIdx) => (
-                              <li key={bIdx}>{b}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {/* Education */}
+              {/* ── EDUCATION ── */}
               {resumeData.education && resumeData.education.length > 0 && (
-                <section className="space-y-1.5">
-                  <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
-                    Education
-                  </h2>
-                  <div className="space-y-1.5">
-                    {resumeData.education.map((edu, eIdx) => (
+                <div style={{ marginTop: "8px" }}>
+                  <SectionHeading label="Education" isDiff={viewMode === "diff"} />
+                  {resumeData.education.map((edu, i) => (
+                    <div key={i} style={{ marginTop: "4px" }}>
                       <div
-                        key={eIdx}
-                        className="flex items-baseline justify-between text-xs"
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "baseline",
+                        }}
                       >
-                        <div>
-                          <span className="font-bold !text-neutral-950">
-                            {edu.school}
-                          </span>
-                          <span className="!text-neutral-700 ml-2">
-                            {edu.degree}
-                          </span>
-                        </div>
-                        <span className="font-mono text-[11px] !text-neutral-600">
+                        <span
+                          style={{
+                            fontWeight: "bold",
+                            fontSize: "10pt",
+                            color: "#000",
+                          }}
+                        >
+                          {edu.school}
+                        </span>
+                        <span style={{ fontSize: "9pt", color: "#555" }}>
                           {edu.dates}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </section>
+                      <div style={{ fontSize: "9.5pt", color: "#333", fontStyle: "italic" }}>
+                        {edu.degree}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
 
-              {/* Certifications */}
+              {/* ── TECHNICAL SKILLS ── */}
+              {resumeData.skills && resumeData.skills.length > 0 && (
+                <div style={{ marginTop: "8px" }}>
+                  <SectionHeading
+                    label="Technical Skills"
+                    isDiff={viewMode === "diff"}
+                  />
+                  <div style={{ marginTop: "3px" }}>
+                    {resumeData.skills.map((skill, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          fontSize: "10pt",
+                          lineHeight: "1.6",
+                          color: "#111",
+                          display: "flex",
+                          gap: "4px",
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold", flexShrink: 0 }}>
+                          {skill.label}:
+                        </span>
+                        <span style={{ color: "#222" }}>{skill.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── PROFESSIONAL EXPERIENCE ── */}
+              {resumeData.experience && resumeData.experience.length > 0 && (
+                <div style={{ marginTop: "8px" }}>
+                  <SectionHeading
+                    label="Experience"
+                    isDiff={viewMode === "diff"}
+                  />
+                  {resumeData.experience.map((exp, expIdx) => {
+                    const bullets = isSinglePage
+                      ? exp.bullets.slice(0, 4)
+                      : exp.bullets;
+                    return (
+                      <div key={expIdx} style={{ marginTop: "5px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "baseline",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: "bold",
+                              fontSize: "10.5pt",
+                              color: "#000",
+                            }}
+                          >
+                            {exp.title}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "9pt",
+                              color: "#555",
+                              fontStyle: "italic",
+                              flexShrink: 0,
+                              marginLeft: "8px",
+                            }}
+                          >
+                            {exp.dates}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "baseline",
+                            marginTop: "1px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "10pt",
+                              fontStyle: "italic",
+                              color: "#333",
+                            }}
+                          >
+                            {exp.company}
+                          </span>
+                          {exp.location && (
+                            <span
+                              style={{
+                                fontSize: "9.5pt",
+                                color: "#666",
+                                flexShrink: 0,
+                                marginLeft: "8px",
+                              }}
+                            >
+                              {exp.location}
+                            </span>
+                          )}
+                        </div>
+                        <ul
+                          style={{
+                            marginTop: "3px",
+                            paddingLeft: "14px",
+                            listStyleType: "disc",
+                          }}
+                        >
+                          {bullets.map((bullet, bulletIdx) => (
+                            <li
+                              key={bulletIdx}
+                              style={{
+                                fontSize: "10pt",
+                                lineHeight: "1.5",
+                                color:
+                                  viewMode === "diff" ? "#065f46" : "#111",
+                                background:
+                                  viewMode === "diff" ? "#ecfdf5" : "none",
+                                borderRadius: "2px",
+                                marginBottom: "1px",
+                              }}
+                            >
+                              {bullet}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── PROJECTS ── */}
+              {resumeData.projects && resumeData.projects.length > 0 && (
+                <div style={{ marginTop: "8px" }}>
+                  <SectionHeading
+                    label="Projects"
+                    isDiff={viewMode === "diff"}
+                  />
+                  {resumeData.projects.map((proj, pIdx) => {
+                    const pBullets = isSinglePage
+                      ? proj.bullets.slice(0, 3)
+                      : proj.bullets;
+                    return (
+                      <div key={pIdx} style={{ marginTop: "5px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "baseline",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: "bold",
+                              fontSize: "10pt",
+                              color: "#000",
+                            }}
+                          >
+                            {proj.name}
+                          </span>
+                          {proj.tools && (
+                            <span
+                              style={{
+                                fontSize: "9pt",
+                                fontStyle: "italic",
+                                color: "#555",
+                                flexShrink: 0,
+                                marginLeft: "8px",
+                              }}
+                            >
+                              {proj.tools}
+                            </span>
+                          )}
+                        </div>
+                        <ul
+                          style={{
+                            marginTop: "2px",
+                            paddingLeft: "14px",
+                            listStyleType: "disc",
+                          }}
+                        >
+                          {pBullets.map((b, bIdx) => (
+                            <li
+                              key={bIdx}
+                              style={{
+                                fontSize: "9.5pt",
+                                lineHeight: "1.45",
+                                color:
+                                  viewMode === "diff" ? "#065f46" : "#111",
+                                background:
+                                  viewMode === "diff" ? "#ecfdf5" : "none",
+                                borderRadius: "2px",
+                                marginBottom: "1px",
+                              }}
+                            >
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── CERTIFICATIONS ── */}
               {resumeData.certifications &&
                 resumeData.certifications.length > 0 && (
-                  <section className="space-y-1.5">
-                    <h2 className="text-xs font-bold uppercase tracking-widest !text-neutral-900 border-b border-neutral-300 pb-1 font-mono">
-                      Certifications
-                    </h2>
-                    <div className="flex flex-wrap gap-1.5 text-xs font-mono !text-neutral-800">
-                      {resumeData.certifications.map((cert, idx) => (
-                        <span
-                          key={`${cert}-${idx}`}
-                          className="px-2 py-0.5 rounded !bg-neutral-100 !text-neutral-800 border border-neutral-200 break-words"
-                        >
-                          {cert}
-                        </span>
-                      ))}
+                  <div style={{ marginTop: "8px" }}>
+                    <SectionHeading
+                      label="Certifications"
+                      isDiff={viewMode === "diff"}
+                    />
+                    <div
+                      style={{
+                        marginTop: "3px",
+                        fontSize: "9.5pt",
+                        color: "#111",
+                        lineHeight: "1.5",
+                      }}
+                    >
+                      {resumeData.certifications.join("   ·   ")}
                     </div>
-                  </section>
+                  </div>
                 )}
             </>
           )}
         </div>
       </div>
 
-      {/* Trust & Review Footnote */}
+      {/* Footnote */}
       <div className="p-3 rounded-xl border border-line bg-surface text-xs text-muted flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <AlertCircle size={14} className="text-subtle shrink-0" />
           <span>
-            All text in the document sheet is editable. Click any bullet point
-            or summary to refine.
+            Preview reflects the actual exported PDF layout. Download to get
+            the final file.
           </span>
         </span>
         <span className="hidden sm:inline-flex font-mono text-[11px] text-subtle">
           ATS-Verified
         </span>
       </div>
+    </div>
+  );
+}
+
+/** Jake Ryan-style section heading: bold label + full-width horizontal rule */
+function SectionHeading({
+  label,
+  isDiff,
+}: {
+  label: string;
+  isDiff: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        borderBottom: "1px solid #333",
+        paddingBottom: "1px",
+        marginBottom: "2px",
+      }}
+    >
+      <span
+        style={{
+          fontSize: "10.5pt",
+          fontWeight: "bold",
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: isDiff ? "#065f46" : "#000",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
     </div>
   );
 }

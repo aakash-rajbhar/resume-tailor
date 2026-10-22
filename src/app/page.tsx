@@ -486,7 +486,7 @@ export default function Home() {
           onHowItWorksClick={handleScrollToWorkspace}
         />
 
-        <main id="main" className="max-w-5xl w-full mx-auto px-4 sm:px-6 flex-1 py-8 sm:py-10 space-y-10 scroll-mt-16">
+        <main id="main" className="max-w-7xl w-full mx-auto px-4 sm:px-6 flex-1 py-8 sm:py-10 space-y-10 scroll-mt-16">
           {/* Landing hero visible when idle at step 1 without active result */}
           {currentStep === 1 && !result && (
             <LandingHero onStart={handleScrollToWorkspace} />
@@ -601,7 +601,7 @@ export default function Home() {
 
         {/* Minimal Footer with essential links */}
         <footer className="border-t border-line py-4 mt-12 bg-surface">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-ink">
                 ResumeTailor

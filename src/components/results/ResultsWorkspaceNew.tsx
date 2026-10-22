@@ -57,11 +57,11 @@ export default function ResultsWorkspaceNew({
         </button>
       </div>
 
-      {/* Grid: 12-column layout (Left ~38% = col-span-5, Right ~62% = col-span-7) */}
-      <div className="grid md:grid-cols-12 gap-8 items-start">
+      {/* Grid: 12-column layout (Left ~33% = col-span-4, Right ~67% = col-span-8) */}
+      <div className="grid md:grid-cols-12 gap-6 items-start">
         {/* Left Pane: Gap Analysis */}
         <div
-          className={`md:col-span-5 space-y-4 md:sticky md:top-20 ${
+          className={`md:col-span-4 space-y-4 md:sticky md:top-20 ${
             mobileTab === "analysis" ? "block" : "hidden md:block"
           }`}
         >
@@ -76,7 +76,7 @@ export default function ResultsWorkspaceNew({
 
         {/* Right Pane: Document Canvas */}
         <div
-          className={`md:col-span-7 ${
+          className={`md:col-span-8 ${
             mobileTab === "document" ? "block" : "hidden md:block"
           }`}
         >

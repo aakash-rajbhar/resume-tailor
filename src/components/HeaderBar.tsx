@@ -25,7 +25,7 @@ export default function HeaderBar({
 }: HeaderBarProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur-md transition-colors">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 rounded-lg bg-surface border border-line flex items-center justify-center text-ink shadow-xs group-hover:border-muted transition-all">
             <svg
