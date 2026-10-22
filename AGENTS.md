@@ -14,6 +14,10 @@ Next.js (App Router), TypeScript, Tailwind v4 (tokens in `@theme` in `globals.cs
 - `npm run dev`: dev server at localhost:3000
 - `npm run build`: production build (must pass before any commit)
 - `npx tsc --noEmit` and `npm run lint`: must be clean
+- `npm test`: vitest suite
+- `npm run baseline -- --runs=5 --provider=gemini --model=<id>`: full-pipeline variance run against the fixtures (add `--reuse-extraction` to hold the keyword set fixed, `--gap=<ms>` to stay under free-tier rate limits)
+- `npm run baseline:extract -- --runs=5`: extraction-only run per provider, cache cleared before every run
+- `npm run baseline:warm`: write one extraction result into the cache for the next full-pipeline run
 - Env: `.env.local` with `AI_PROVIDER`, `GEMINI_API_KEY`, `GROQ_API_KEY` (see `.env.example`)
 
 ## Where things live
@@ -26,6 +30,10 @@ Next.js (App Router), TypeScript, Tailwind v4 (tokens in `@theme` in `globals.cs
 - `src/lib/normalizeResume.ts`: defends against malformed AI output
 - `src/lib/workspaceStore.ts`: persistence and URL step sync
 - `src/lib/types.ts`: shared `TailoredResume` type (source of truth for the data shape)
+- `src/lib/extractJD.ts`: JD extraction, pinned model + cross-provider fallback, per-model cache key
+- `src/lib/extractCanonicalize.ts`: code-side canonicalization of extracted skills
+- `src/lib/models.ts`: pinned model ids (tailoring defaults, extraction pin, fallback)
+- `scripts/`, `docs/baseline.md`: measurement harnesses and the recorded numbers
 - `src/components/`: `workspace/` (steps), `results/` (review UI), `ui/` (primitives)
 
 ## Hard rules
@@ -62,9 +70,13 @@ Move to a **Master Profile** architecture: GitHub login (Auth.js), structured pr
 ## Known issues / notes
 
 - `ui/orbital-sphere.tsx` is a decorative 3D component. It's likely the heaviest bundle item for little value. Candidate for removal.
-- Same inputs give slightly different scores and gaps between runs (LLM variance). Fix: cache by input hash, temperature 0, and code-computed scoring.
-- Free-tier 429s are expected. Surface a friendly retry or provider switch.
+- Free-tier 429s are expected. Surface a friendly retry or provider switch. On 2026-10-22 the pinned extraction model and `gemini-3.8-flash` were both out of daily quota; the Groq extraction fallback absorbed it and `extractionFallback` is surfaced in the API and UI.
+- Scoring and keyword extraction are deterministic now (see `docs/baseline.md`). The remaining variance source is the tailoring text: a supported keyword that the tailoring model omits lowers the score. Fix by caching tailoring results per (provider, model, resume, JD) or by requiring the tailoring step to include every supported keyword.
 
 ## Current status
 
-<!-- Update this as you go, e.g. "Production-readiness pass: Batch 3 of 7 done" -->
+Phase 0.9 (deterministic core) done: one pinned extraction model with a
+cross-provider fallback, code-side canonicalization of extracted skills,
+code-computed score/matched/missing, and measurements in `docs/baseline.md`
+(score, matched and missing identical across Gemini and Groq on the fixture
+pair). Phase 1 (Master Profile) has not started.

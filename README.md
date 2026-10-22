@@ -38,6 +38,16 @@ GEMINI_API_KEY=your-key-here
 (If you'd rather use Groq instead, get a free key at https://console.groq.com/keys,
 set `AI_PROVIDER=groq` and `GROQ_API_KEY=...` — the app supports both, see `src/lib/ai.ts`.)
 
+Optional server-side settings:
+
+| Variable | Default | Why you would change it |
+| --- | --- | --- |
+| `EXTRACTION_MODEL` | `gemini-3.6-flash` | The job description is extracted once with this model, so the keyword set does not depend on the model chosen for tailoring. Change it when the free tier of the pinned model is exhausted. |
+| `EXTRACTION_FALLBACK_MODEL` | `openai/gpt-oss-20b` | Used automatically when the pinned extraction model errors out (for example a quota 429). |
+
+The model id is part of the cache key, so switching models re-extracts the job
+description instead of reusing another model's keywords.
+
 ## 4. Run it
 
 ```bash

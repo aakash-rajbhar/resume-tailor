@@ -1,185 +1,174 @@
 # Baseline measurements
 
-## Before Phase 0 (current implementation) — provider: gemini, model: (app default)
+How stable the app's output is for the same resume + job description, before
+and after the Phase 0.9 deterministic core.
 
-- Runs completed: 3 (2 failed)
-- Score before: 74–78 (spread 4)
-- Score after: 94–96 (spread 2)
-- Distinct matched-keyword sets across runs: 3
-- Distinct missing-keyword sets across runs: 1
-- Identical matched AND missing across all runs: NO
+- Date of the runs below: 2026-10-22.
+- Fixtures: `scripts/fixtures/resume.txt` and `scripts/fixtures/jd.txt` (same
+  pair for every run, every provider).
+- Provider keys come from `.env.local` and are never printed. No resume text
+  or prompt is logged.
+- Scoring is computed in code (`src/lib/score.ts`): 70% required, 30%
+  preferred, word-boundary matching, sorted output.
 
-| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | error | error | — | — | — | — | — | — |
-| 2 | 76 | 94 | 17 | 4 | — | — | — | 3 |
-| 3 | 74 | 94 | 20 | 4 | — | — | — | 3 |
-| 4 | error | error | — | — | — | — | — | — |
-| 5 | 78 | 96 | 20 | 4 | — | — | — | 4 |
+## Method
 
-- Run 2 matched: ["JavaScript","TypeScript","React","Next.js","Node.js","Express","REST APIs","PostgreSQL","MongoDB","AWS","CI/CD","Docker","Git/GitHub","Jest","Playwright","Core Web Vitals","Prisma"]
-- Run 2 missing: ["Kubernetes","Terraform","GraphQL","Redis"]
-- Run 3 matched: ["JavaScript","TypeScript","React","Next.js","Node.js","Express.js","REST APIs","PostgreSQL","MongoDB","AWS","CI/CD","Docker","Git/GitHub","Jest","Playwright","Prisma","Core Web Vitals","Responsive Design","Unit Testing","End-to-End Testing"]
-- Run 3 missing: ["Kubernetes","Terraform","GraphQL","Redis"]
-- Run 5 matched: ["Full Stack Engineer","React.js","Next.js","Node.js","Express.js","TypeScript","JavaScript","PostgreSQL","MongoDB","REST APIs","AWS (EC2, RDS, S3, Amplify)","CI/CD","Docker","Jest","Playwright","Git/GitHub","Core Web Vitals","Prisma","SSR/SSG/ISR","Responsive Design"]
-- Run 5 missing: ["Kubernetes","Terraform","GraphQL","Redis"]
+| Harness | What it does |
+| --- | --- |
+| `npm run baseline -- --runs=5 --provider=gemini --model=…` | Full pipeline through `/api/analyze`. Clears `.cache/llm` before every run. |
+| `npm run baseline -- … --reuse-extraction` | Same, but keeps the cached extraction result and drops only the cached tailoring result, so the keyword set is held fixed and only the tailoring varies. |
+| `npm run baseline:extract -- --runs=5` | Extraction only (`src/lib/extractJD.ts`), per provider, cache cleared before every run. |
+| `npm run baseline:warm` | Writes one extraction result into the cache, so a following full-pipeline run can be measured against a fixed keyword set. |
 
-## Before Phase 0 (current implementation, Groq) — provider: groq, model: (app default)
+Cache: `.cache/llm` (gitignored), one file per LLM result, keyed by
+`hashKey(purpose, prompt version, model, input)`. The model id is part of the
+key, so switching models never reuses another model's extraction.
 
-- Runs completed: 1 (4 failed)
-- Score before: 68–68 (spread 0)
-- Score after: 92–92 (spread 0)
-- Distinct matched-keyword sets across runs: 1
-- Distinct missing-keyword sets across runs: 1
-- Identical matched AND missing across all runs: YES
+## Live model inventory (fetched 2026-10-22)
 
-| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 68 | 92 | 23 | 9 | — | — | — | 4 |
-| 2 | error | error | — | — | — | — | — | — |
-| 3 | error | error | — | — | — | — | — | — |
-| 4 | error | error | — | — | — | — | — | — |
-| 5 | error | error | — | — | — | — | — | — |
+`GET https://generativelanguage.googleapis.com/v1beta/models` → 200, 50 ids.
+`GET https://api.groq.com/openai/v1/models` → 200, 11 ids.
 
-- Run 1 matched: ["Full Stack Engineer","JavaScript","TypeScript","React","Next.js","Node.js","Express","REST APIs","PostgreSQL","MongoDB","AWS","CI/CD","Docker","Git","GitHub","Jest","Playwright","Core Web Vitals","Responsive","Accessible","Performance Optimization","Secure","Prisma"]
-- Run 1 missing: ["Infrastructure as code","Observable","Kubernetes","Terraform","GraphQL","Redis","Open source contributions","Mentor junior engineers","Raise quality bar"]
+### Gemini
 
-## Phase0 Gemini cleared — provider: gemini, model: (app default)
+| Kept | Role |
+| --- | --- |
+| `gemini-3.8-flash` | Default Gemini tailoring model |
+| `gemini-3.6-flash` | Pinned extraction model (`EXTRACTION_MODEL`) |
+| `gemini-3.5-flash-lite` | Lightest Gemini option; on 2026-10-22 it was the only Gemini model with free-tier quota left, so it carried the Gemini half of the full-pipeline measurement |
 
-- Runs completed: 5
-- Score before: 55–55 (spread 0)
-- Score after: 60–60 (spread 0)
-- Distinct matched-keyword sets across runs: 1
-- Distinct missing-keyword sets across runs: 1
-- Identical matched AND missing across all runs: YES
+| Dropped | Why |
+| --- | --- |
+| `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-pro-latest` | Moving aliases, not pinned ids |
+| `gemini-3-flash-preview`, `gemini-3.1-*-preview`, `gemini-3.1-pro-preview` | Preview ids, subject to removal |
+| `gemini-4-argon` | Listed by the API but returned no free-tier quota in probing |
+| `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-2.5-pro` | Probe failed with "Thinking level is not supported for this model"; 2.5 family also had no quota |
+| `gemini-3.1-flash-lite` | Probe timed out at 20s |
+| `gemma-4-26b-a4b-it`, `gemma-4-31b-it` | Instruction-tuned Gemma, no structured-output guarantee |
+| `*-image*`, `nano-banana*`, `lyria-*`, `*-tts-*`, `gemini-3.5-transcribe`, `gemini-omni*`, `gemini-robotics-*`, `deep-research-*`, `gemini-embedding-*`, `aqa` | Wrong modality for resume text |
+| `antigravity-preview-*` | Agent preview ids, not chat models |
 
-| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 2 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 3 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 4 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 5 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
+### Groq
 
-- Run 1 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 1 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 2 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 2 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 3 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 3 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 4 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 4 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 5 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 5 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
+| Kept | Role |
+| --- | --- |
+| `openai/gpt-oss-120b` | Default Groq tailoring model |
+| `openai/gpt-oss-20b` | Fast Groq option and cross-provider extraction fallback (`EXTRACTION_FALLBACK_MODEL`) |
+| `qwen/qwen3.8-27b` | Multilingual option, 131072 context |
 
-## Phase0 Groq cleared — provider: groq, model: (app default)
+| Dropped | Why |
+| --- | --- |
+| `openai/gpt-oss-safeguard-20b` | Safeguard model, not a generator |
+| `meta-llama/llama-prompt-guard-2-22m`, `meta-llama/llama-prompt-guard-2-86m` | Guard models, 512 context |
+| `whisper-large-v3`, `whisper-large-v3-turbo` | Audio transcription |
+| `canopylabs/orpheus-arabic-saudi`, `canopylabs/orpheus-v1-english` | TTS/music, 4000 context |
+| `allam-2-7b` | Arabic-only, 4096 context |
+| `llama-3.3-70b-versatile`, `llama-3.1-8b-instant` | No longer listed by the API |
 
-- Runs completed: 5
-- Score before: 64–64 (spread 0)
-- Score after: 64–64 (spread 0)
-- Distinct matched-keyword sets across runs: 1
-- Distinct missing-keyword sets across runs: 1
-- Identical matched AND missing across all runs: YES
+## Phase 0.9 — extraction only (cache cleared before every run)
 
-| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 64 | 64 | 12 | 8 | 0 | openai/gpt-oss-120b | false | 2 |
-| 2 | 64 | 64 | 12 | 8 | 0 | openai/gpt-oss-120b | false | 2 |
-| 3 | 64 | 64 | 12 | 8 | 0 | openai/gpt-oss-120b | false | 2 |
-| 4 | 64 | 64 | 12 | 8 | 0 | openai/gpt-oss-120b | false | 2 |
-| 5 | 64 | 64 | 12 | 8 | 0 | openai/gpt-oss-120b | false | 2 |
+Extraction prompt version `2026.10.22.3`. Keywords are canonicalized in code
+before they are scored.
 
-- Run 1 matched: ["AWS","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 1 missing: ["CI/CD pipelines","Git/GitHub workflows","GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 2 matched: ["AWS","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 2 missing: ["CI/CD pipelines","Git/GitHub workflows","GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 3 matched: ["AWS","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 3 missing: ["CI/CD pipelines","Git/GitHub workflows","GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 4 matched: ["AWS","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 4 missing: ["CI/CD pipelines","Git/GitHub workflows","GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 5 matched: ["AWS","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 5 missing: ["CI/CD pipelines","Git/GitHub workflows","GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
+| Provider / model | Runs | Within-provider Jaccard | Keyword set |
+| --- | --- | --- | --- |
+| `gemini-3.6-flash` (pinned) | 3 of 5 — 2 runs failed with a daily-quota 429 | 1.0000 over the 3 successful runs | 24 keywords, complete |
+| `gemini-3.5-flash-lite` | 5 of 5 | 1.0000 | 20 keywords — drops `rest` and the three testing skills |
+| `openai/gpt-oss-20b` | 5 of 5 | 1.0000 (one earlier batch had 0.9833 when a run omitted `playwright`) | 24 keywords, complete |
 
-## Phase0 Gemini cached — provider: gemini, model: (app default)
+Complete 24-keyword set (identical for `gemini-3.6-flash` and
+`openai/gpt-oss-20b`):
 
-- Runs completed: 5
-- Score before: 64–64 (spread 0)
-- Score after: 74–74 (spread 0)
-- Distinct matched-keyword sets across runs: 1
-- Distinct missing-keyword sets across runs: 1
-- Identical matched AND missing across all runs: YES
+- Required: `aws`, `ci/cd`, `docker`, `express`, `git`, `github`,
+  `javascript`, `jest`, `mongodb`, `next.js`, `node.js`, `playwright`,
+  `postgresql`, `react`, `rest`, `typescript`
+- Preferred: `end-to-end testing`, `graphql`, `integration testing`,
+  `kubernetes`, `prisma`, `redis`, `terraform`, `unit testing`
+- Other requirements: `Contributions to open source`, `Mentor junior engineers`
+- Education requirement: "Bachelor's degree in Computer Science, Information
+  Technology or a related field"
 
-| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 64 | 74 | 14 | 6 | 2 | gemini-3.8-flash | false | 3 |
-| 2 | 64 | 74 | 14 | 6 | 2 | gemini-3.8-flash | false | 3 |
-| 3 | 64 | 74 | 14 | 6 | 2 | gemini-3.8-flash | false | 3 |
-| 4 | 64 | 74 | 14 | 6 | 2 | gemini-3.8-flash | false | 3 |
-| 5 | 64 | 74 | 14 | 6 | 2 | gemini-3.8-flash | false | 3 |
+Across providers (union of all runs):
 
-- Run 1 matched: ["AWS","CI/CD pipelines","Docker","Express","Git/GitHub workflows","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 1 missing: ["GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 2 matched: ["AWS","CI/CD pipelines","Docker","Express","Git/GitHub workflows","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 2 missing: ["GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 3 matched: ["AWS","CI/CD pipelines","Docker","Express","Git/GitHub workflows","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 3 missing: ["GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 4 matched: ["AWS","CI/CD pipelines","Docker","Express","Git/GitHub workflows","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 4 missing: ["GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
-- Run 5 matched: ["AWS","CI/CD pipelines","Docker","Express","Git/GitHub workflows","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","Prisma","React","REST APIs","TypeScript"]
-- Run 5 missing: ["GraphQL","Kubernetes","open source","Redis","Terraform","unit, integration and end-to-end testing"]
+| Pair | Jaccard |
+| --- | --- |
+| `gemini-3.6-flash` vs `openai/gpt-oss-20b` | 1.0000 |
+| `gemini-3.5-flash-lite` vs `openai/gpt-oss-20b` | 0.8333 |
 
-## Phase0 Gemini cleared2 — provider: gemini, model: (app default)
+What the earlier prompt produced, for contrast: `unit, integration and
+end-to-end testing`, `Git/GitHub workflows`, `CI/CD pipelines` and
+`testing practices including unit, integration and end-to-end testing` were
+emitted as single entries, and `gemini-3.6-flash` also dropped `Jest` and
+`Playwright` entirely. Rule 4 of the prompt now names those splits and the
+example job description shows the expected output.
 
-- Runs completed: 5
-- Score before: 55–55 (spread 0)
-- Score after: 60–60 (spread 0)
-- Distinct matched-keyword sets across runs: 1
-- Distinct missing-keyword sets across runs: 1
-- Identical matched AND missing across all runs: YES
+## Phase 0.9 — full pipeline (extraction frozen)
 
-| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 2 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 3 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 4 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 5 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
+`npm run baseline -- --runs=5 … --reuse-extraction` against the 24-keyword
+extraction above. Same resume, same job description, extraction held fixed.
 
-- Run 1 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 1 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 2 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 2 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 3 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 3 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 4 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 4 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 5 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 5 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
+| Tailoring provider / model | Runs | Score before → after | Matched | Missing | Identical across runs |
+| --- | --- | --- | --- | --- | --- |
+| `gemini-3.5-flash-lite` | 5 of 5 | 74 → 74 | 17 | 7 | YES |
+| `openai/gpt-oss-120b` | 5 of 5 | 74 → 74 | 17 | 7 | YES |
 
-## Phase0 Gemini cached2 — provider: gemini, model: (app default)
+- Matched: `aws`, `ci/cd`, `docker`, `express`, `git`, `github`, `javascript`,
+  `jest`, `mongodb`, `next.js`, `node.js`, `playwright`, `postgresql`,
+  `prisma`, `react`, `rest`, `typescript`
+- Missing: `end-to-end testing`, `graphql`, `integration testing`,
+  `kubernetes`, `redis`, `terraform`, `unit testing` — the job skills the
+  resume cannot support, so they stay gaps by design.
+- Pairwise Jaccard on matched and missing was 1.0000 for every pair inside a
+  provider and across the two providers.
+- Score before and after are equal in all ten runs: the tailored resume keeps
+  every keyword the original resume already had, and adds none that the
+  resume cannot support.
 
-- Runs completed: 5
-- Score before: 55–55 (spread 0)
-- Score after: 60–60 (spread 0)
-- Distinct matched-keyword sets across runs: 1
-- Distinct missing-keyword sets across runs: 1
-- Identical matched AND missing across all runs: YES
+## Before Phase 0 (historical, kept for comparison)
 
-| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 2 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 3 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 4 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
-| 5 | 55 | 60 | 12 | 9 | 1 | gemini-3.8-flash | false | 3 |
+Before the deterministic core, the same fixture pair gave different answers
+per provider and per run:
 
-- Run 1 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 1 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 2 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 2 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 3 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 3 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 4 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 4 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
-- Run 5 matched: ["AWS","CI/CD pipelines","Docker","Express","JavaScript","MongoDB","Next.js","Node.js","PostgreSQL","React","REST APIs","TypeScript"]
-- Run 5 missing: ["Bachelor's degree in Computer Science, Information Technology or a related field","caching layers such as Redis","Contributions to open source","Git/GitHub workflows","GraphQL","Kubernetes","Prisma or other modern data access layers","Terraform","testing practices including unit, integration and end-to-end testing"]
+| Provider | Score before → after | Matched | Missing |
+| --- | --- | --- | --- |
+| Gemini (default model) | 76 → 94, 74 → 94, 78 → 96 | 17, 20, 20 — different sets, including `Express.js` vs `Express`, `React.js` vs `React` | `Kubernetes`, `Terraform`, `GraphQL`, `Redis` |
+| Groq (default model) | 68 → 92 | 23 — included `Core Web Vitals`, `Responsive`, `Accessible`, `Performance Optimization`, `Secure` | also `Infrastructure as code`, `Observable`, `Open source contributions`, `Mentor junior engineers` |
+
+The keyword sets were not atomic, so the same requirement was counted
+differently depending on how the model phrased it: `CI/CD pipelines`,
+`Git/GitHub workflows`, `unit, integration and end-to-end testing`,
+`caching layers such as Redis`, `Prisma or other modern data access layers`,
+and a degree listed as a keyword (`Bachelor's degree in Computer Science…`).
+The mid-Phase-0 runs (cache cleared) still produced `CI/CD pipelines`,
+`Git/GitHub workflows` and `unit, integration and end-to-end testing` as
+missing keywords.
+
+## Findings
+
+1. **Extraction is now the deterministic input.** One pinned model, one
+   canonicalizer in code, one cache entry per job description. Repeated
+   extractions of the same JD produced the same keyword set every time
+   (Jaccard 1.0000 within each provider).
+2. **Cross-provider agreement needs the same extraction.** Gemini and Groq
+   agree exactly (Jaccard 1.0000) once both run the same extraction prompt
+   and the same canonicalizer. `gemini-3.5-flash-lite` is the weaker
+   extractor of the three (0.8333 against Groq) — it drops `rest` and the
+   three testing skills — which is why it is not the pinned model.
+3. **Scoring is deterministic.** With the keyword set fixed, score, matched
+   and missing are byte-identical across runs and identical across tailoring
+   providers (74 → 74, 17 matched, 7 missing in all ten runs).
+4. **Free-tier quota is the practical constraint.** `gemini-3.6-flash` and
+   `gemini-3.8-flash` both hit their daily quota during this measurement
+   (`429 You exceeded your current quota`). The app's cross-provider fallback
+   absorbed it: every affected run extracted through
+   `openai/gpt-oss-20b` and reported `extractionFallback: true`. The pin is
+   now overridable with `EXTRACTION_MODEL` / `EXTRACTION_FALLBACK_MODEL`
+   (server-side, part of the cache key) so a deployment can move the pin
+   without a code change.
+5. **Tailoring text is still the only remaining source of variance.** A
+   keyword only counts as matched if it appears in the tailored resume, so a
+   tailoring model that omits a supported keyword lowers the score. With the
+   extraction frozen this was stable across all ten runs, but it is still an
+   LLM output. Next lever if it shows up: cache tailoring results by
+   (provider, model, resume, JD), or require the tailoring step to include
+   every supported keyword and drop unsupported ones.
