@@ -1,19 +1,22 @@
 import mammoth from "mammoth";
+import { createRequire } from "node:module";
+
+import { logger } from "./logger";
 
 // Polyfill DOMMatrix for pdfjs-dist (required in Node.js/Vercel serverless)
 if (typeof globalThis.DOMMatrix !== "function") {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const domMatrixModule = require("dommatrix");
-  
+  const nodeRequire = createRequire(import.meta.url);
+  const domMatrixModule = nodeRequire("dommatrix");
+
   // Handle CommonJS, ES Module interop (.default), and direct module exports
   const DOMMatrixConstructor = typeof domMatrixModule === "function"
     ? domMatrixModule
     : (domMatrixModule.default || domMatrixModule.DOMMatrix || domMatrixModule);
 
   if (typeof DOMMatrixConstructor === "function") {
-    globalThis.DOMMatrix = DOMMatrixConstructor as any;
+    globalThis.DOMMatrix = DOMMatrixConstructor as unknown as typeof globalThis.DOMMatrix;
   } else {
-    console.error("DOMMatrix polyfill failed: resolved module is not a constructor function", domMatrixModule);
+    logger.error("DOMMatrix polyfill failed: resolved module is not a constructor function");
   }
 }
 

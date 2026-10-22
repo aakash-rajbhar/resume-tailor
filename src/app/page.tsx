@@ -590,7 +590,6 @@ export default function Home() {
                       onToggleSinglePage={setSinglePage}
                       onDownloadDocx={handleDownload}
                       onStartOver={handleStartOver}
-                      onUpdateResume={(updated) => setResult(updated)}
                     />
                   </ErrorBoundary>
                 )}

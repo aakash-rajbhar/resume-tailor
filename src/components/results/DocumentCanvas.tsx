@@ -25,7 +25,6 @@ interface DocumentCanvasProps {
   onToggleSinglePage?: (single: boolean) => void;
   onDownloadDocx: () => void;
   onStartOver: () => void;
-  onUpdateResume?: (updated: TailoredResume) => void;
 }
 
 type ViewMode = "tailored" | "diff" | "original";
@@ -38,7 +37,6 @@ export default function DocumentCanvas({
   onToggleSinglePage,
   onDownloadDocx,
   onStartOver,
-  onUpdateResume,
 }: DocumentCanvasProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("tailored");
   const [copied, setCopied] = useState(false);

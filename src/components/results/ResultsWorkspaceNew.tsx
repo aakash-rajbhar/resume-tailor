@@ -13,7 +13,6 @@ interface ResultsWorkspaceNewProps {
   onToggleSinglePage?: (single: boolean) => void;
   onDownloadDocx: () => void;
   onStartOver: () => void;
-  onUpdateResume?: (updated: TailoredResume) => void;
 }
 
 export default function ResultsWorkspaceNew({
@@ -24,7 +23,6 @@ export default function ResultsWorkspaceNew({
   onToggleSinglePage,
   onDownloadDocx,
   onStartOver,
-  onUpdateResume,
 }: ResultsWorkspaceNewProps) {
   // Mobile tab toggle: "analysis" vs "document"
   const [mobileTab, setMobileTab] = useState<"analysis" | "document">("document");
@@ -95,7 +93,6 @@ export default function ResultsWorkspaceNew({
             onToggleSinglePage={onToggleSinglePage}
             onDownloadDocx={onDownloadDocx}
             onStartOver={onStartOver}
-            onUpdateResume={onUpdateResume}
           />
         </div>
       </div>

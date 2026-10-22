@@ -185,7 +185,7 @@ for (const group of GROUPS) {
 
 /** Normalized canonical form -> the display name used in the alias map. */
 const CANONICAL_DISPLAY = new Map<string, string>();
-for (const [canonical, aliases] of Object.entries(SKILL_SYNONYMS)) {
+for (const canonical of Object.keys(SKILL_SYNONYMS)) {
   CANONICAL_DISPLAY.set(normalizeForMatch(canonical), canonical);
 }
 

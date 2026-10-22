@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeScore } from "@/lib/score";
-import { canonicalizeSkill, normalizeForMatch } from "@/lib/skills/synonyms";
+import { normalizeForMatch } from "@/lib/skills/synonyms";
 
 describe("computeScore word boundaries", () => {
   it("does NOT match 'java' when text only contains 'javascript'", () => {
