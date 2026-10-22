@@ -35,6 +35,8 @@ function parseArgs(argv) {
     keepServer: false,
     extractOnly: false,
     extractionProvider: "",
+    gapMs: 0,
+    reuseExtraction: false,
   };
   for (const raw of argv) {
     const m = /^--([^=]+)(?:=(.*))?$/.exec(raw);
@@ -45,17 +47,39 @@ function parseArgs(argv) {
   }
   args.runs = Number(args.runs);
   args.port = Number(args.port);
+  args.gapMs = Number(args.gapMs);
   return args;
 }
 
-function clearCache() {
+/**
+ * A cached extraction entry stores `{ jd, modelUsed, fallbackUsed }`; a cached
+ * tailoring entry stores `{ data }`. Keeping extraction entries pinned across
+ * runs isolates tailoring variance from extraction variance.
+ */
+function isExtractionEntry(file) {
+  try {
+    const envelope = JSON.parse(readFileSync(file, "utf8"));
+    return Boolean(
+      envelope?.value && typeof envelope.value === "object" && "jd" in envelope.value,
+    );
+  } catch {
+    return false;
+  }
+}
+
+function clearCache({ keepExtraction = false } = {}) {
   const cacheDir = path.join(ROOT, ".cache");
   if (!existsSync(cacheDir)) return;
   try {
-    const entries = readdirSync(cacheDir);
-    for (const entry of entries) {
-      const full = path.join(cacheDir, entry);
-      rmSync(full, { recursive: true, force: true });
+    const stores = readdirSync(cacheDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => path.join(cacheDir, entry.name));
+    for (const store of stores) {
+      for (const file of readdirSync(store)) {
+        const full = path.join(store, file);
+        if (keepExtraction && isExtractionEntry(full)) continue;
+        rmSync(full, { recursive: true, force: true });
+      }
     }
   } catch {
     /* ignore */
@@ -149,7 +173,10 @@ async function main() {
 
   const runs = [];
   for (let i = 1; i <= args.runs; i++) {
-    clearCache();
+    if (args.gapMs && i > 1) {
+      await new Promise((r) => setTimeout(r, args.gapMs));
+    }
+    clearCache({ keepExtraction: args.reuseExtraction });
     const startedAt = Date.now();
     const fd = new FormData();
     fd.set("jdText", jdText);
@@ -278,6 +305,15 @@ function renderSection(s) {
   lines.push(`- Distinct matched-keyword sets across runs: ${s.matchedVariants}`);
   lines.push(`- Distinct missing-keyword sets across runs: ${s.missingVariants}`);
   lines.push(`- Identical matched AND missing across all runs: ${s.identical ? "YES" : "NO"}`);
+  const extractionModels = [...new Set(s.runsDetail.filter((r) => !r.error).map((r) => `${r.extractionModelUsed}${r.extractionFallback ? " (fallback)" : ""}`))];
+  lines.push(`- Extraction model(s) used: ${extractionModels.join(", ") || "n/a"}`);
+  if (s.runsDetail.some((r) => !r.error && r.otherRequirements?.length)) {
+    const other = s.runsDetail.find((r) => !r.error && r.otherRequirements?.length);
+    lines.push(`- Other requirements (run ${other.run}): ${JSON.stringify(other.otherRequirements)}`);
+  }
+  if (s.runsDetail.some((r) => !r.error && r.educationRequirement)) {
+    lines.push(`- Education requirement: ${JSON.stringify(s.runsDetail.find((r) => !r.error && r.educationRequirement).educationRequirement)}`);
+  }
   if (s.jaccardPairs?.length) {
     for (const p of s.jaccardPairs) {
       lines.push(`- Jaccard ${p.pair} matched/missing: ${p.matched.toFixed(4)}/${p.missing.toFixed(4)}`);

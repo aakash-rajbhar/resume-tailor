@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "baseline": "node scripts/baseline.mjs"
+    "baseline": "node scripts/baseline.mjs",
+    "baseline:extract": "tsx scripts/extraction-baseline.mjs",
+    "baseline:warm": "tsx scripts/warm-extraction.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -38,6 +40,7 @@
     "eslint-config-next": "16.2.11",
     "prettier": "3.9.10",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^3.2.7"
   }
