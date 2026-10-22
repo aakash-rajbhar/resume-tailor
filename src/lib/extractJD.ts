@@ -1,5 +1,6 @@
 import { generateJSON, type AIConfig, type AIProvider } from "./ai";
 import { cleanTextForHash, hashKey, withCache } from "./cache";
+import { cacheStoreFor } from "./cache/store";
 import {
   buildJDUserPrompt,
   EXTRACT_PROMPT_VERSION,
@@ -67,6 +68,10 @@ export async function extractJD(
     model: string,
   ) {
     const key = hashKey("jd-extract", EXTRACT_PROMPT_VERSION, model, cleaned);
+    const store = cacheStoreFor("jd-extract", {
+      model,
+      promptVersion: EXTRACT_PROMPT_VERSION,
+    });
     const { value, cached } = await withCache<CachedJD>(key, async () => {
       const generated = await generateJSON<Jd>({
         system: JD_SYSTEM_PROMPT,
@@ -96,7 +101,7 @@ export async function extractJD(
         modelUsed: generated.modelUsed,
         fallbackUsed: generated.fallbackUsed,
       };
-    });
+    }, store);
     return { ...value, cached };
   }
 
