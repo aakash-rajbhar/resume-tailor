@@ -13,6 +13,28 @@ export interface ExtractJDOptions {
   provider?: AIProvider;
   model?: string;
   config?: Partial<AIConfig>;
+  /**
+   * Measurement-only override. When set, extraction uses exactly this
+   * provider/model pair and does not fall back, so the caller can compare
+   * providers directly. Normal API traffic leaves this unset and gets the
+   * pinned model plus fallback.
+   */
+  extractionProvider?: AIProvider;
+  extractionModel?: string;
+}
+
+/**
+ * Pinned extraction model, overridable per deployment so a provider quota
+ * block can be worked around without a code change. The override is read on
+ * the server only and is part of the cache key, so switching models never
+ * reuses another model's extraction.
+ */
+function pinnedExtractionModel(): string {
+  return process.env.EXTRACTION_MODEL?.trim() || EXTRACTION_MODEL;
+}
+
+function fallbackExtractionModel(): string {
+  return process.env.EXTRACTION_FALLBACK_MODEL?.trim() || EXTRACTION_FALLBACK_MODEL;
 }
 
 export interface ExtractJDResult {
@@ -78,14 +100,25 @@ export async function extractJD(
     return { ...value, cached };
   }
 
+  if (options.extractionProvider) {
+    const result = await runExtraction(
+      options.extractionProvider,
+      options.extractionModel ??
+        (options.extractionProvider === "groq"
+          ? fallbackExtractionModel()
+          : pinnedExtractionModel()),
+    );
+    return { ...result, extractionFallback: result.fallbackUsed };
+  }
+
   try {
-    const primary = await runExtraction("gemini", EXTRACTION_MODEL);
+    const primary = await runExtraction("gemini", pinnedExtractionModel());
     return {
       ...primary,
       extractionFallback: primary.fallbackUsed,
     };
   } catch {
-    const fallback = await runExtraction("groq", EXTRACTION_FALLBACK_MODEL);
+    const fallback = await runExtraction("groq", fallbackExtractionModel());
     return {
       ...fallback,
       extractionFallback: true,
