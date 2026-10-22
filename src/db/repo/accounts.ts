@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import type { Db } from "@/db/client";
+import type { DbExecutor } from "@/db/client";
 import { accounts } from "@/db/schema";
 import { decryptSecret, isEncryptedValue } from "@/lib/crypto";
 
@@ -7,7 +7,7 @@ import { decryptSecret, isEncryptedValue } from "@/lib/crypto";
  * Account rows hold the OAuth tokens. They are encrypted at rest and only
  * ever decrypted on the server, for server-side GitHub calls.
  */
-export function createAccountsRepo(client: Db) {
+export function createAccountsRepo(client: DbExecutor) {
   return {
     async listForUser(userId: string) {
       return client.select().from(accounts).where(eq(accounts.userId, userId));

@@ -1,7 +1,7 @@
 import { jobs } from "@/db/schema";
 import type { JobInput, JobUpdate } from "@/lib/schemas";
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { Db } from "@/db/client";
+import type { DbExecutor } from "@/db/client";
 import { ConflictError } from "@/lib/errors";
 
 /**
@@ -10,7 +10,7 @@ import { ConflictError } from "@/lib/errors";
  * another user's rows. Writes use an optimistic lock.
  */
 
-export function createJobsRepo(client: Db) {
+export function createJobsRepo(client: DbExecutor) {
   return {
     async list(userId: string) {
       return client

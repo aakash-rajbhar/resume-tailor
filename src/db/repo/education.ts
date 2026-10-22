@@ -1,7 +1,7 @@
 import { education } from "@/db/schema";
 import type { EducationInput } from "@/lib/schemas";
 import { and, asc, eq, sql } from "drizzle-orm";
-import type { Db } from "@/db/client";
+import type { DbExecutor } from "@/db/client";
 import { ConflictError } from "@/lib/errors";
 
 /**
@@ -10,7 +10,7 @@ import { ConflictError } from "@/lib/errors";
  * another user's rows. Writes use an optimistic lock.
  */
 
-export function createEducationRepo(client: Db) {
+export function createEducationRepo(client: DbExecutor) {
   return {
     async list(userId: string) {
       return client

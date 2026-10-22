@@ -10,12 +10,15 @@ interface SignInButtonProps {
   size?: ButtonSize;
   variant?: ButtonVariant;
   label?: string;
+  /** Where the browser goes after the sign-in. */
+  callbackUrl?: string;
 }
 
 export default function SignInButton({
   size = "md",
   variant = "primary",
   label = "Sign in with GitHub",
+  callbackUrl = "/",
 }: SignInButtonProps) {
   const [pending, setPending] = useState(false);
 
@@ -28,7 +31,7 @@ export default function SignInButton({
       icon={<LogIn size={15} aria-hidden />}
       onClick={() => {
         setPending(true);
-        void signIn("github", { callbackUrl: "/" });
+        void signIn("github", { callbackUrl });
       }}
     >
       {label}

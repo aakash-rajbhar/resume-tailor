@@ -4,6 +4,17 @@ import * as schema from "./schema";
 
 export type Db = PostgresJsDatabase<typeof schema>;
 
+/**
+ * The transaction handle. It exposes the same query builders as the database
+ * itself, so the repositories work inside a transaction unchanged.
+ */
+export type DbTransaction = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/**
+ * What the repositories need: a database or a transaction.
+ */
+export type DbExecutor = Db | DbTransaction;
+
 let client: ReturnType<typeof postgres> | null = null;
 let database: Db | null = null;
 

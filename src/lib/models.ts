@@ -90,6 +90,14 @@ export const EXTRACTION_MODEL = "gemini-3.6-flash";
 /** Model used for extraction if the pinned extraction model is unavailable. */
 export const EXTRACTION_FALLBACK_MODEL = "openai/gpt-oss-20b";
 
+/**
+ * Pinned model for the profile builder. The profile sections are extracted
+ * with one small call per section, so a fast, cheap model is used. It is a
+ * separate pin from the JD extraction so a quota block on one does not take
+ * the other down.
+ */
+export const PROFILE_EXTRACTION_MODEL = "gemini-3.6-flash";
+
 export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 export const DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b";
 

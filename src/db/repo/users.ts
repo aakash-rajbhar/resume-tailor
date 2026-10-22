@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "@/db/client";
+import type { DbExecutor } from "@/db/client";
 import { users } from "@/db/schema";
 
-export function createUsersRepo(client: Db) {
+export function createUsersRepo(client: DbExecutor) {
   return {
     /** True when the user row still exists. */
     async exists(userId: string) {

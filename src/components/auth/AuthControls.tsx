@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 
@@ -25,6 +26,12 @@ export default function AuthControls() {
         <span className="hidden sm:inline text-xs text-muted max-w-[140px] truncate">
           {name}
         </span>
+        <Link
+          href="/profile"
+          className="hidden sm:inline text-xs font-medium text-muted hover:text-ink transition-colors"
+        >
+          Profile
+        </Link>
         <Button
           type="button"
           size="sm"

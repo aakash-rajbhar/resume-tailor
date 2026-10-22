@@ -1,4 +1,4 @@
-import { getDb, type Db } from "@/db/client";
+import { getDb, type DbExecutor } from "@/db/client";
 import { createAccountsRepo } from "./accounts";
 import { createCertificationsRepo } from "./certifications";
 import { createEducationRepo } from "./education";
@@ -21,7 +21,7 @@ export * from "./skills";
 export * from "./users";
 export * from "./verifiedFacts";
 
-export function createRepos(client: Db) {
+export function createRepos(client: DbExecutor) {
   return {
     profiles: createProfilesRepo(client),
     experience: createExperienceRepo(client),

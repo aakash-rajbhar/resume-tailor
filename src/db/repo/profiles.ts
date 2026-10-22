@@ -1,7 +1,7 @@
 import { profiles } from "@/db/schema";
 import type { ProfileInput } from "@/lib/schemas";
 import { and, eq, sql } from "drizzle-orm";
-import type { Db } from "@/db/client";
+import type { DbExecutor } from "@/db/client";
 import { ConflictError } from "@/lib/errors";
 
 /**
@@ -10,7 +10,7 @@ import { ConflictError } from "@/lib/errors";
  * another user's rows. Writes use an optimistic lock.
  */
 
-export function createProfilesRepo(client: Db) {
+export function createProfilesRepo(client: DbExecutor) {
   return {
     async get(userId: string) {
       const rows = await client

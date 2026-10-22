@@ -33,7 +33,7 @@ export default function LoginPage() {
         </div>
 
         <div className="paper-card p-6 flex flex-col items-center gap-4">
-          <SignInButton size="lg" />
+          <SignInButton size="lg" callbackUrl="/profile" />
           <p className="text-xs text-subtle text-center leading-relaxed">
             We only read your public profile and email address. No repository
             access is requested.
