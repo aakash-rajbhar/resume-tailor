@@ -68,6 +68,7 @@ export default function Home() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<FlowStep>(1);
+  const [authEnabled, setAuthEnabled] = useState(false);
 
   // Resume state
   const [resumeMode, setResumeMode] = useState<"upload" | "paste">("upload");
@@ -96,6 +97,23 @@ export default function Home() {
   useEffect(() => {
     applyTheme(settings.theme);
   }, [settings.theme]);
+
+  // The Master Profile is optional. Ask the server whether sign-in is
+  // available so the header only shows the controls when it is.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/status")
+      .then((res) => (res.ok ? res.json() : { enabled: false }))
+      .then((data: { enabled?: boolean }) => {
+        if (!cancelled) setAuthEnabled(Boolean(data.enabled));
+      })
+      .catch(() => {
+        /* Sign-in stays hidden when the status route is unreachable. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Restore persisted workspace on mount. Reading localStorage is only
   // possible client-side after mount (SSR cannot), so setState here is required.
@@ -484,6 +502,7 @@ export default function Home() {
           hasKey={hasKey}
           onOpenSettings={() => setSettingsOpen(true)}
           onHowItWorksClick={handleScrollToWorkspace}
+          authEnabled={authEnabled}
         />
 
         <main id="main" className="max-w-7xl w-full mx-auto px-4 sm:px-6 flex-1 py-8 sm:py-10 space-y-10 scroll-mt-16">

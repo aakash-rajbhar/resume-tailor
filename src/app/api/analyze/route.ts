@@ -9,6 +9,9 @@ import { resumeToText } from "@/lib/resumeText";
 import { normalizeTailoredResume } from "@/lib/normalizeResume";
 import { AnalyzeFormSchema, TailoredResumeSchema } from "@/lib/schemas";
 import { cleanTextForHash, hashKey, withCache } from "@/lib/cache";
+import { apiErrorResponse } from "@/lib/api";
+import { isAuthEnabled } from "@/lib/auth/feature";
+import { requireUser } from "@/lib/auth/session";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -21,6 +24,12 @@ function readText(formData: FormData, field: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // The Master Profile is optional: with it disabled the flow stays
+    // anonymous and nothing about the database is touched.
+    if (isAuthEnabled()) {
+      await requireUser();
+    }
+
     const formData = await req.formData();
 
     const parsed = AnalyzeFormSchema.safeParse({
@@ -148,11 +157,6 @@ export async function POST(req: NextRequest) {
       otherRequirements: jdResult.jd.other_requirements,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    logger.error("analyze failed", {
-      message,
-      name: err instanceof Error ? err.name : "unknown",
-    });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiErrorResponse(err);
   }
 }

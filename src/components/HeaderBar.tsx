@@ -3,6 +3,7 @@
 import { Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import ProviderChip from "./ProviderChip";
+import AuthControls from "@/components/auth/AuthControls";
 import type { AIProvider } from "@/lib/ai";
 import Link from "next/link";
 
@@ -13,6 +14,8 @@ interface HeaderBarProps {
   hasKey: boolean;
   onOpenSettings: () => void;
   onHowItWorksClick?: () => void;
+  /** Sign-in controls are only rendered when the Master Profile is enabled. */
+  authEnabled?: boolean;
 }
 
 export default function HeaderBar({
@@ -22,6 +25,7 @@ export default function HeaderBar({
   hasKey,
   onOpenSettings,
   onHowItWorksClick,
+  authEnabled = false,
 }: HeaderBarProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur-md transition-colors">
@@ -65,6 +69,7 @@ export default function HeaderBar({
             </button>
           )}
           <ProviderChip provider={provider} hasKey={hasKey} onClick={onOpenSettings} />
+          {authEnabled && <AuthControls />}
           <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
           <button
             type="button"

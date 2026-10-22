@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildResumeDocx } from "@/lib/docxBuilder";
 import type { TailoredResume } from "@/lib/types";
+import { apiErrorResponse } from "@/lib/api";
+import { isAuthEnabled } from "@/lib/auth/feature";
+import { requireUser } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    if (isAuthEnabled()) {
+      await requireUser();
+    }
+
     const body = (await req.json()) as
       | TailoredResume
       | { resume: TailoredResume; singlePage?: boolean };
@@ -24,8 +31,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("download error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiErrorResponse(err);
   }
 }
