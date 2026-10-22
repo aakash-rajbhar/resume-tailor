@@ -16,7 +16,7 @@
  * starts itself unless --base-url points at an already running one.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, rmSync, readdirSync } from "node:fs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,17 +33,33 @@ function parseArgs(argv) {
     baseUrl: "",
     out: "docs/baseline.md",
     keepServer: false,
+    extractOnly: false,
+    extractionProvider: "",
   };
   for (const raw of argv) {
     const m = /^--([^=]+)(?:=(.*))?$/.exec(raw);
     if (!m) continue;
     const key = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
     const value = m[2] ?? "true";
-    if (key in args) args[key] = value;
+    if (key in args) args[key] = value === "true" ? true : value === "false" ? false : value;
   }
   args.runs = Number(args.runs);
   args.port = Number(args.port);
   return args;
+}
+
+function clearCache() {
+  const cacheDir = path.join(ROOT, ".cache");
+  if (!existsSync(cacheDir)) return;
+  try {
+    const entries = readdirSync(cacheDir);
+    for (const entry of entries) {
+      const full = path.join(cacheDir, entry);
+      rmSync(full, { recursive: true, force: true });
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Minimal .env.local reader. Values are never printed. */
@@ -133,6 +149,7 @@ async function main() {
 
   const runs = [];
   for (let i = 1; i <= args.runs; i++) {
+    clearCache();
     const startedAt = Date.now();
     const fd = new FormData();
     fd.set("jdText", jdText);
@@ -168,11 +185,15 @@ async function main() {
       added: payload.addedKeywords ?? null,
       modelUsed: payload.modelUsed ?? null,
       fallbackUsed: payload.fallbackUsed ?? null,
+      extractionModelUsed: payload.extractionModelUsed ?? payload.jdModelUsed ?? null,
+      extractionFallback: payload.extractionFallback ?? null,
+      educationRequirement: payload.educationRequirement ?? null,
+      otherRequirements: payload.otherRequirements ?? [],
       notes: (payload.notes ?? []).length,
     });
     const r = runs[runs.length - 1];
     console.log(
-      `[baseline] run ${i}/${args.runs}: ${r.scoreBefore}% -> ${r.scoreAfter}% | matched=${r.matched.length} missing=${r.missing.length} (${r.ms}ms)`,
+      `[baseline] run ${i}/${args.runs}: ${r.scoreBefore}% -> ${r.scoreAfter}% | matched=${r.matched.length} missing=${r.missing.length} (extract=${r.extractionModelUsed}, fb=${r.extractionFallback}) (${r.ms}ms)`,
     );
   }
 
@@ -183,6 +204,31 @@ async function main() {
   const beforeScores = ok.map((r) => r.scoreBefore).filter((v) => typeof v === "number");
   const uniqueMatched = new Set(ok.map((r) => JSON.stringify([...r.matched].sort())));
   const uniqueMissing = new Set(ok.map((r) => JSON.stringify([...r.missing].sort())));
+
+  function jaccard(a, b) {
+    const sa = new Set(a);
+    const sb = new Set(b);
+    const union = new Set([...sa, ...sb]);
+    if (union.size === 0) return 1;
+    let inter = 0;
+    for (const x of sa) if (sb.has(x)) inter++;
+    return inter / union.size;
+  }
+
+  let jaccardPairs = [];
+  if (ok.length >= 2) {
+    for (let i = 0; i < ok.length; i++) {
+      for (let j = i + 1; j < ok.length; j++) {
+        const a = ok[i];
+        const b = ok[j];
+        jaccardPairs.push({
+          pair: `${a.run}-${b.run}`,
+          matched: jaccard(a.matched, b.matched),
+          missing: jaccard(a.missing, b.missing),
+        });
+      }
+    }
+  }
 
   const summary = {
     label: args.label,
@@ -195,6 +241,7 @@ async function main() {
     matchedVariants: uniqueMatched.size,
     missingVariants: uniqueMissing.size,
     identical: uniqueMatched.size <= 1 && uniqueMissing.size <= 1,
+    jaccardPairs,
     runsDetail: runs,
   };
 
@@ -231,6 +278,11 @@ function renderSection(s) {
   lines.push(`- Distinct matched-keyword sets across runs: ${s.matchedVariants}`);
   lines.push(`- Distinct missing-keyword sets across runs: ${s.missingVariants}`);
   lines.push(`- Identical matched AND missing across all runs: ${s.identical ? "YES" : "NO"}`);
+  if (s.jaccardPairs?.length) {
+    for (const p of s.jaccardPairs) {
+      lines.push(`- Jaccard ${p.pair} matched/missing: ${p.matched.toFixed(4)}/${p.missing.toFixed(4)}`);
+    }
+  }
   lines.push("");
   lines.push("| Run | Score before | Score after | Matched | Missing | Added | Model | Fallback | Notes |");
   lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
