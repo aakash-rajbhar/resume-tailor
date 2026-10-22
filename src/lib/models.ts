@@ -80,6 +80,8 @@ export const GROQ_MODELS: GroqModelConfig[] = [
   },
 ];
 
+export const EXTRACTION_MODEL = "gemini-2.5-flash"; // pin extraction model; will verify via live list-models and may adjust
+
 export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 export const DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b";
 
