@@ -10,25 +10,27 @@ export const PROMPT_VERSION = "2026.10.22.1";
  * Bumped whenever the JD extraction prompt changes so cached extractions are
  * invalidated.
  */
-export const EXTRACT_PROMPT_VERSION = "2026.10.22.2";
+export const EXTRACT_PROMPT_VERSION = "2026.10.22.3";
 
 export const JD_SYSTEM_PROMPT = `You extract structured requirements from a job description.
 
 Rules:
 1. Extract ONLY what the job description explicitly states. Never infer a skill, tool or qualification that is not written in the text.
 2. required_skills and preferred_skills must hold SINGLE skills, tools, or technologies. Each entry must be at most three words. No sentences, no degrees, no long phrases.
-3. A skill is REQUIRED only when the job description marks it as required (words such as "required", "must", "need", "minimum", "essential") or lists it under a requirements section. Skills listed as nice-to-have (words such as "preferred", "plus", "bonus", "a plus") are PREFERRED.
-4. Split compounds into single skills. A slash-separated pair of tools becomes two entries. A comma-separated list becomes one entry per item. A list joined by "and" becomes one entry per item. Keep CI/CD as one entry.
+3. A skill is REQUIRED when the job description marks it as required (words such as "required", "must", "need", "minimum", "essential"), lists it under a requirements section, or names it as a tool the role will use. Skills listed as nice-to-have (words such as "preferred", "plus", "bonus", "a plus") are PREFERRED.
+4. Split compounds into single skills. A slash-separated pair of tools becomes two entries. A comma-separated list becomes one entry per item. A list joined by "and" becomes one entry per item. "unit, integration and end-to-end testing" becomes three entries: "unit testing", "integration testing", "end-to-end testing". "Jest and Playwright" becomes two entries. Keep CI/CD as one entry.
 5. Generic traits (communication, teamwork, attention to detail) are not skills.
 6. education_requirement: put any degree or education requirement as a short string if the job description states it, otherwise null.
 7. other_requirements: list explicit requirements that are not single skills or tools (for example open source contributions, mentoring, on-call ownership) as short phrases. These do NOT count toward scoring.
-8. Sort required_skills and preferred_skills alphabetically, case-insensitively.
-9. Use empty arrays when nothing applies. Use null for education_requirement when it is not stated.
-10. Respond with a single JSON object and nothing else. Every example below contains no numbers.`;
+8. Never add a skill that is only named inside other_requirements or education_requirement; every skill the description names belongs in required_skills or preferred_skills.
+9. Sort required_skills and preferred_skills alphabetically, case-insensitively.
+10. Use empty arrays when nothing applies. Use null for education_requirement when it is not stated.
+11. Respond with a single JSON object and nothing else. Every example below contains no numbers.`;
 
 export const JD_EXAMPLE = `EXAMPLE JOB DESCRIPTION:
 Requirements: React and TypeScript. Must have hands-on experience with REST APIs and PostgreSQL.
-Preferred: Docker experience is a plus. Contributes to open source.
+Preferred: Docker experience is a plus. Exposure to unit, integration and end-to-end testing.
+Write automated tests with Jest and Playwright. Contributes to open source.
 Requires a bachelor's degree in computer science or equivalent.
 
 EXAMPLE OUTPUT:
@@ -36,8 +38,8 @@ EXAMPLE OUTPUT:
   "title": "",
   "company": "",
   "seniority": "",
-  "required_skills": ["PostgreSQL", "React", "REST APIs", "TypeScript"],
-  "preferred_skills": ["Docker"],
+  "required_skills": ["Jest", "Playwright", "PostgreSQL", "React", "REST APIs", "TypeScript"],
+  "preferred_skills": ["Docker", "End-to-End Testing", "Integration Testing", "Unit Testing"],
   "responsibilities": [],
   "education_requirement": "Bachelor's degree in computer science or equivalent",
   "other_requirements": ["Contributes to open source"]
