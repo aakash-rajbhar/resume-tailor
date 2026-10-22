@@ -40,6 +40,19 @@ describe("database client", () => {
     process.env.DATABASE_URL = "postgres://localhost:5432/db";
     expect(isDatabaseConfigured()).toBe(true);
   });
+
+  it("builds the repository singleton on first use", async () => {
+    const { getRepos } = await import("@/db/repo");
+    const created = await createTestDb();
+    setDbForTesting(created.db as unknown as Db);
+
+    const repos = getRepos();
+    expect(repos).toBe(getRepos());
+    expect(repos.profiles.get).toBeTypeOf("function");
+    expect(repos.users.exists).toBeTypeOf("function");
+
+    await created.client.close();
+  });
 });
 
 describe("cache store selection", () => {
