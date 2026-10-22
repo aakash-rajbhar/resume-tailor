@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
       modelUsed: tailored.modelUsed,
       fallbackUsed: tailored.fallbackUsed,
       jdCached: jdResult.cached,
+      extractionFallback: jdResult.extractionFallback,
       tailoringCached,
       scoreBefore: before.score,
       scoreAfter: after.score,
@@ -141,6 +142,10 @@ export async function POST(req: NextRequest) {
       modelUsed: tailored.modelUsed,
       fallbackUsed: tailored.fallbackUsed,
       jdModelUsed: jdResult.modelUsed,
+      extractionModelUsed: jdResult.modelUsed,
+      extractionFallback: jdResult.extractionFallback,
+      educationRequirement: jdResult.jd.education_requirement,
+      otherRequirements: jdResult.jd.other_requirements,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

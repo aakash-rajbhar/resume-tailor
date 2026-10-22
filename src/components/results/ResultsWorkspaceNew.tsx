@@ -74,6 +74,10 @@ export default function ResultsWorkspaceNew({
             addedKeywords={result.addedKeywords}
             modelUsed={result.modelUsed}
             fallbackUsed={result.fallbackUsed}
+            extractionModelUsed={result.extractionModelUsed}
+            extractionFallback={result.extractionFallback}
+            educationRequirement={result.educationRequirement}
+            otherRequirements={result.otherRequirements}
           />
         </div>
 

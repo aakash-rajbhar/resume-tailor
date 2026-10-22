@@ -9,6 +9,8 @@ import {
   ChevronUp,
   TrendingUp,
   Cpu,
+  BookOpen,
+  ListChecks,
 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 
@@ -21,6 +23,10 @@ interface GapAnalysisPanelProps {
   addedKeywords?: string[];
   modelUsed?: string;
   fallbackUsed?: boolean;
+  extractionModelUsed?: string;
+  extractionFallback?: boolean;
+  educationRequirement?: string | null;
+  otherRequirements?: string[];
 }
 
 export default function GapAnalysisPanel({
@@ -32,11 +38,16 @@ export default function GapAnalysisPanel({
   addedKeywords = [],
   modelUsed,
   fallbackUsed = false,
+  extractionModelUsed,
+  extractionFallback = false,
+  educationRequirement = null,
+  otherRequirements = [],
 }: GapAnalysisPanelProps) {
   const [openSections, setOpenSections] = useState({
     matched: true,
     missing: true,
     added: true,
+    other: true,
     suggestions: true,
   });
 
@@ -96,7 +107,7 @@ export default function GapAnalysisPanel({
         </p>
 
         {modelUsed && (
-          <div className="flex items-center justify-between gap-2 border-t border-line pt-3 text-xs text-muted">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-xs text-muted">
             <span className="flex items-center gap-1.5 min-w-0">
               <Cpu size={12} aria-hidden className="shrink-0" />
               <span className="truncate">
@@ -104,6 +115,19 @@ export default function GapAnalysisPanel({
                 <span className="font-mono text-ink">{modelUsed}</span>
               </span>
             </span>
+            {extractionModelUsed && (
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className="truncate">
+                  Extracted with{" "}
+                  <span className="font-mono text-ink">{extractionModelUsed}</span>
+                </span>
+                {extractionFallback && (
+                  <Badge variant="partial" size="sm" className="shrink-0">
+                    fallback model
+                  </Badge>
+                )}
+              </span>
+            )}
             {fallbackUsed && (
               <Badge variant="partial" size="sm" className="shrink-0">
                 fallback model
@@ -249,6 +273,57 @@ export default function GapAnalysisPanel({
           </div>
         )}
       </div>
+
+      {/* Other requirements - not scored */}
+      {(educationRequirement || otherRequirements.length > 0) && (
+        <div className="paper-card overflow-hidden shadow-xs">
+          <button
+            type="button"
+            onClick={() => toggleSection("other")}
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-surface-2/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue" />
+              <span className="text-xs font-semibold text-ink uppercase tracking-wider">
+                Other Requirements (
+                {otherRequirements.length + (educationRequirement ? 1 : 0)})
+              </span>
+            </div>
+            {openSections.other ? (
+              <ChevronUp size={15} />
+            ) : (
+              <ChevronDown size={15} />
+            )}
+          </button>
+
+          {openSections.other && (
+            <div className="px-4 pb-4 pt-1 border-t border-line space-y-2">
+              {educationRequirement && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-surface-2/60 border border-line text-xs text-ink">
+                  <BookOpen size={13} className="text-blue shrink-0 mt-0.5" />
+                  <span>
+                    <span className="font-semibold">Education: </span>
+                    {educationRequirement}
+                  </span>
+                </div>
+              )}
+              {otherRequirements.map((req, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-2 p-3 rounded-lg bg-surface-2/60 border border-line text-xs text-ink"
+                >
+                  <ListChecks size={13} className="text-blue shrink-0 mt-0.5" />
+                  <span>{req}</span>
+                </div>
+              ))}
+              <p className="text-xs text-muted leading-relaxed">
+                These requirements are listed for context. They do not affect
+                the match score.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Strategic Suggestions */}
       {notes.length > 0 && (

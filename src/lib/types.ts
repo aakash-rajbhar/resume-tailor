@@ -42,4 +42,8 @@ export interface TailoredResume {
   modelUsed?: string;
   fallbackUsed?: boolean;
   jdModelUsed?: string;
+  extractionModelUsed?: string;
+  extractionFallback?: boolean;
+  educationRequirement?: string | null;
+  otherRequirements?: string[];
 }

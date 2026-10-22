@@ -94,5 +94,9 @@ export function normalizeTailoredResume(raw: unknown): TailoredResume {
     modelUsed: asString(r.modelUsed),
     fallbackUsed: r.fallbackUsed === true,
     jdModelUsed: asString(r.jdModelUsed),
+    extractionModelUsed: asString(r.extractionModelUsed),
+    extractionFallback: r.extractionFallback === true,
+    educationRequirement: typeof r.educationRequirement === "string" ? r.educationRequirement : null,
+    otherRequirements: asStringArray(r.otherRequirements),
   };
 }
