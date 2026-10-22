@@ -36,7 +36,8 @@ export const SKILL_SYNONYMS: Record<string, string[]> = {
     "Build Pipeline",
   ],
   Jenkins: ["Jenkins"],
-  Git: ["Git", "GitHub", "Git/GitHub", "Github", "Bitbucket"],
+  Git: ["Git", "Git/GitHub", "Bitbucket"],
+  GitHub: ["GitHub", "Github", "gh"],
   Java: ["Java", "Java 8", "Java 11", "Java 17", "Java 21"],
   Python: ["Python", "Python3", "Python 3"],
   Django: ["Django"],
@@ -66,13 +67,15 @@ export const SKILL_SYNONYMS: Record<string, string[]> = {
   Jest: ["Jest"],
   Playwright: ["Playwright"],
   Cypress: ["Cypress"],
-  Testing: [
-    "Testing",
-    "Unit Testing",
-    "Integration Testing",
+  "Unit Testing": ["Unit Testing", "Unit Tests"],
+  "Integration Testing": ["Integration Testing", "Integration Tests"],
+  "End-to-End Testing": [
     "End-to-End Testing",
     "End to End Testing",
     "E2E Testing",
+  ],
+  Testing: [
+    "Testing",
     "Test Automation",
     "Automated Testing",
     "TDD",
@@ -180,6 +183,53 @@ for (const group of GROUPS) {
   }
 }
 
+/** Normalized canonical form -> the display name used in the alias map. */
+const CANONICAL_DISPLAY = new Map<string, string>();
+for (const [canonical, aliases] of Object.entries(SKILL_SYNONYMS)) {
+  CANONICAL_DISPLAY.set(normalizeForMatch(canonical), canonical);
+}
+
+/** Singular and plural surface forms of a word, used for light matching. */
+export function pluralForms(word: string): string[] {
+  const forms = new Set<string>();
+  if (/ies$/.test(word)) forms.add(`${word.slice(0, -3)}y`);
+  if (/(ses|xes|zes|ches|shes)$/.test(word)) forms.add(word.slice(0, -2));
+  if (/[^sxz]es$/.test(word)) forms.add(word.slice(0, -2));
+  if (/[^s]s$/.test(word)) forms.add(word.slice(0, -1));
+  return [...forms];
+}
+
+/** A word plus its singular/plural variants. */
+export function wordForms(word: string): string[] {
+  const forms = new Set<string>([word]);
+  for (const form of pluralForms(word)) forms.add(form);
+  return [...forms];
+}
+
+/**
+ * Resolves a skill string to the alias map's display name, tolerating light
+ * singular/plural differences ("REST APIs" -> "REST").
+ * Returns null when the string is not part of the alias map.
+ */
+export function canonicalDisplayName(name: string): string | null {
+  const normalized = normalizeForMatch(name);
+  if (!normalized) return null;
+  const direct = BY_VARIANT.get(normalized);
+  if (direct) return CANONICAL_DISPLAY.get(direct.canonical) ?? direct.canonical;
+
+  for (const word of normalized.split(" ")) {
+    for (const form of wordForms(word)) {
+      const candidate = BY_VARIANT.get(
+        normalized.replace(new RegExp(`\\b${word}\\b`), form),
+      );
+      if (candidate) {
+        return CANONICAL_DISPLAY.get(candidate.canonical) ?? candidate.canonical;
+      }
+    }
+  }
+  return null;
+}
+
 /** Canonical, normalized name for a skill string. */
 export function canonicalizeSkill(name: string): string {
   const normalized = normalizeForMatch(name);
@@ -192,5 +242,14 @@ export function skillVariants(name: string): string[] {
   const normalized = normalizeForMatch(name);
   if (!normalized) return [];
   const group = BY_VARIANT.get(normalized);
-  return group ? [...group.variants] : [normalized];
+  const base = group ? [...group.variants] : [normalized];
+  const expanded = new Set<string>(base);
+  for (const variant of base) {
+    for (const word of variant.split(" ")) {
+      for (const form of pluralForms(word)) {
+        expanded.add(variant.replace(new RegExp(`\\b${word}\\b`), form));
+      }
+    }
+  }
+  return [...expanded];
 }
