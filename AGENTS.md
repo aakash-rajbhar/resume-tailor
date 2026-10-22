@@ -18,7 +18,11 @@ Next.js (App Router), TypeScript, Tailwind v4 (tokens in `@theme` in `globals.cs
 - `npm run baseline -- --runs=5 --provider=gemini --model=<id>`: full-pipeline variance run against the fixtures (add `--reuse-extraction` to hold the keyword set fixed, `--gap=<ms>` to stay under free-tier rate limits)
 - `npm run baseline:extract -- --runs=5`: extraction-only run per provider, cache cleared before every run
 - `npm run baseline:warm`: write one extraction result into the cache for the next full-pipeline run
+- `npm run db:generate`: regenerate SQL migrations from `src/db/schema.ts`
+- `npm run db:migrate`: apply migrations (uses `DIRECT_URL`)
+- `npm run db:check-rls`: assert every table has RLS on, no policies, no `anon`/`authenticated` grants
 - Env: `.env.local` with `AI_PROVIDER`, `GEMINI_API_KEY`, `GROQ_API_KEY` (see `.env.example`)
+- Master Profile env: `ENABLE_AUTH`, `DATABASE_URL` (runtime pooler), `DIRECT_URL` (migrations), `AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, `AUTH_TRUST_HOST`, `TOKEN_ENCRYPTION_KEY`
 
 ## Where things live
 
@@ -35,6 +39,11 @@ Next.js (App Router), TypeScript, Tailwind v4 (tokens in `@theme` in `globals.cs
 - `src/lib/models.ts`: pinned model ids (tailoring defaults, extraction pin, fallback)
 - `scripts/`, `docs/baseline.md`: measurement harnesses and the recorded numbers
 - `src/components/`: `workspace/` (steps), `results/` (review UI), `ui/` (primitives)
+- `src/db/schema.ts`: Drizzle schema (13 tables, RLS on every table)
+- `src/db/repo/`: per-table data access, owner-scoped, optimistic locking
+- `src/lib/auth/`: Auth.js config, encrypting adapter, `requireUser()`
+- `src/lib/crypto.ts`: AES-256-GCM for OAuth tokens
+- `src/lib/schemas/`: Zod schemas for the profile, JD, and saved jobs
 
 ## Hard rules
 
@@ -43,8 +52,10 @@ Next.js (App Router), TypeScript, Tailwind v4 (tokens in `@theme` in `globals.cs
 3. **Don't let the LLM make decisions code can make** (score, matched/missing lists, ordering). When touching scoring, move toward computing it in code from extracted keywords. Use temperature 0, a pinned model ID, and JSON schema output.
 4. **No PII to the LLM when avoidable.** Name, email, phone, and address should be re-inserted in code at render time (planned).
 5. **Never persist the raw uploaded file.** Store extracted text only, in sessionStorage by default. Keep the "Clear my data" action working.
-6. **Secrets stay server-side.** No API keys in the client bundle. Check `settings.ts` whenever it's modified.
+6. **Secrets stay server-side.** No API keys in the client bundle. Check `settings.ts` whenever it's modified. OAuth tokens are encrypted with AES-256-GCM before they are written; only server code may read or decrypt them, and the session cookie carries no token.
 7. **ATS output rules:** single column, no tables, icons, images, or skill bars. Standard section headings (Summary, Skills, Experience, Projects, Education). Selectable-text PDF. Standard fonts.
+8. **The database is locked down.** Every table has row level security on, no policies exist, and `anon`/`authenticated` hold no grants. The app connects as the owner role. Route handlers must not import `drizzle-orm` or the schema directly; go through `src/db/repo/`.
+9. **The Master Profile is optional.** With `ENABLE_AUTH=false` the app must keep working with no database configured. The DB client and the Auth.js instance are built lazily.
 
 ## Conventions
 
@@ -65,7 +76,7 @@ Next.js (App Router), TypeScript, Tailwind v4 (tokens in `@theme` in `globals.cs
 
 ## Roadmap (not built yet; don't build unless asked)
 
-Move to a **Master Profile** architecture: GitHub login (Auth.js), structured profile in Postgres, JD parsed once and cached, deterministic `matchProfile` and `selectContent`, gap-question interview with saved verified facts, per-bullet rewriting with a validation guard, job history. Core principle: **deterministic code decides, the LLM only extracts and phrases.**
+Finish the **Master Profile** architecture: JD parsed once and cached, deterministic `matchProfile` and `selectContent`, gap-question interview with saved verified facts, per-bullet rewriting with a validation guard, job history UI. Core principle: **deterministic code decides, the LLM only extracts and phrases.** The database, Auth.js login, and the profile read/write API already exist (see Current status).
 
 ## Known issues / notes
 
@@ -79,4 +90,14 @@ Phase 0.9 (deterministic core) done: one pinned extraction model with a
 cross-provider fallback, code-side canonicalization of extracted skills,
 code-computed score/matched/missing, and measurements in `docs/baseline.md`
 (score, matched and missing identical across Gemini and Groq on the fixture
-pair). Phase 1 (Master Profile) has not started.
+pair).
+
+Phase 1 Step B (Master Profile foundation) done: Drizzle schema for 13 tables
+with row level security on every table and no grants for `anon`/`authenticated`,
+migrations in `migrations/`, Auth.js v5 GitHub login with AES-256-GCM encrypted
+OAuth tokens, owner-scoped repositories with optimistic locking, a shared
+`llm_cache` table behind the existing `CacheStore` interface, and Zod schemas
+for the profile content. With `ENABLE_AUTH=false` the app behaves exactly as
+before: no database is required and the anonymous flow is untouched.
+Phase 1 Step C (the profile UI, JD caching and deterministic matching) has not
+started.
