@@ -4,9 +4,11 @@ export const JdSchema = z.object({
   title: z.string().default(""),
   company: z.string().default(""),
   seniority: z.string().default(""),
-  required_skills: z.array(z.string()).max(20).default([]),
-  preferred_skills: z.array(z.string()).max(15).default([]),
-  responsibilities: z.array(z.string()).max(10).default([]),
+  required_skills: z.array(z.string()).max(30).default([]),
+  preferred_skills: z.array(z.string()).max(30).default([]),
+  responsibilities: z.array(z.string()).max(15).default([]),
+  education_requirement: z.string().nullable().optional().default(null),
+  other_requirements: z.array(z.string()).max(15).default([]),
 });
 
 export type Jd = z.infer<typeof JdSchema>;
