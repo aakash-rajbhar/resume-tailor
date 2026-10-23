@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import ProviderChip from "./ProviderChip";
 import AuthControls from "@/components/auth/AuthControls";
+import { SessionProvider } from "next-auth/react";
 import type { AIProvider } from "@/lib/ai";
 import Link from "next/link";
 
@@ -69,7 +70,11 @@ export default function HeaderBar({
             </button>
           )}
           <ProviderChip provider={provider} hasKey={hasKey} onClick={onOpenSettings} />
-          {authEnabled && <AuthControls />}
+          {authEnabled && (
+            <SessionProvider>
+              <AuthControls />
+            </SessionProvider>
+          )}
           <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
           <button
             type="button"

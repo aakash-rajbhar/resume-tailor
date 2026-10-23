@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import type {
   CertificationItem,
@@ -597,6 +597,44 @@ function groupSkills(items: SkillItem[]): SkillGroup[] {
   return groups;
 }
 
+/**
+ * The group of a skill changes the section the skill is rendered in, so
+ * committing every keystroke would remount the input and drop focus. Keep the
+ * value local and commit it when the field loses focus instead.
+ */
+function SkillGroupInput({
+  id,
+  value,
+  disabled,
+  onCommit,
+}: {
+  id: string;
+  value: string;
+  disabled?: boolean;
+  onCommit: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <TextInput
+      id={id}
+      value={focused ? draft : value}
+      disabled={disabled}
+      onFocus={() => {
+        setDraft(value);
+        setFocused(true);
+      }}
+      onChange={setDraft}
+      onBlur={() => {
+        setFocused(false);
+        if (draft !== value) onCommit(draft);
+      }}
+      placeholder="Languages"
+    />
+  );
+}
+
 /** Swaps two skills inside the same category. */
 function moveInGroup(
   items: SkillItem[],
@@ -704,12 +742,11 @@ export function SkillForm({
                     />
                   </Field>
                   <Field label="Group" htmlFor={`skill-group-${index}`}>
-                    <TextInput
+                    <SkillGroupInput
                       id={`skill-group-${index}`}
                       value={item.groupLabel}
                       disabled={disabled}
-                      onChange={(value) => update(index, { groupLabel: value })}
-                      placeholder="Languages"
+                      onCommit={(value) => update(index, { groupLabel: value })}
                     />
                   </Field>
                 </div>

@@ -48,6 +48,8 @@ export function TextInput({
   id,
   value,
   onChange,
+  onFocus,
+  onBlur,
   placeholder,
   type = "text",
   disabled,
@@ -57,6 +59,8 @@ export function TextInput({
   id: string;
   value: string;
   onChange: (value: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   placeholder?: string;
   type?: string;
   disabled?: boolean;
@@ -73,6 +77,8 @@ export function TextInput({
       autoComplete={autoComplete}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
+      onFocus={onFocus}
+      onBlur={onBlur}
       className={cn(CONTROL, disabled && "opacity-60")}
     />
   );
